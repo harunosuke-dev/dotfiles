@@ -1,0 +1,15 @@
+### Local settings ###
+*.local
+local.*
+# ただし packages/*/.local は $XDG_DATA_HOME 向けのstow構造なので追跡する
+!packages/*/.local
+
+### Zsh cache ###
+*.zwc
+.zcomp*
+.zsh_sessions
+
+### Zed local state ###
+# プロンプトライブラリのローカルDB（マシン固有・バイナリ）
+packages/zed/.config/zed/prompts/
+
