@@ -55,6 +55,9 @@
     path = conf.d/ghq.conf
     # path = conf.d/local.conf
 
+[includeIf "gitdir/i:~/Repos/github.com/Harunosuke-web/"]
+    path = conf.d/user-web.conf
+
 [filter "lfs"]
     clean = git-lfs clean -- %f
     smudge = git-lfs smudge -- %f
