@@ -67,14 +67,13 @@ setup.sh
 1. `setup-nix.sh install` - Nix本体
 2. `setup-homebrew.sh` - Homebrewとパッケージ（`stow`を含む）
 3. `bin/setup-links.sh` - 設定ファイルリンク
-4. `setup-local-config.sh` - ローカル設定
-5. `setup-nix.sh apply` - nix-darwinシステム設定
-6. `setup-apt.sh` - APT（macOSではスキップ）
-7. `setup-mise.sh` - 開発環境
-8. `setup-zinit.sh` - シェル環境
-9. `setup-bat.sh` - テーマキャッシュ
-10. `setup-nvim.sh` - エディタ設定
-11. `setup-login.sh` - ログイン
+4. `setup-nix.sh apply` - nix-darwinシステム設定
+5. `setup-apt.sh` - APT（macOSではスキップ）
+6. `setup-mise.sh` - 開発環境
+7. `setup-zinit.sh` - シェル環境
+8. `setup-bat.sh` - テーマキャッシュ
+9. `setup-nvim.sh` - エディタ設定
+10. `setup-login.sh` - ログイン
 
 各ステップは独立して実行され、失敗しても後続ステップを試します。最後のサマリーに成功・スキップ・失敗が表示され、失敗が1件以上あれば全体の終了コードは非0になります。
 
@@ -90,36 +89,6 @@ setup-nix.sh apply
 - `NIX_DARWIN_CONFIG`で構成名を上書き可能
 - `system.primaryUser`と現在ユーザーが異なる場合はNix適用のみスキップ
 - 初回nix-darwin適用前に、管理対象となる既存`/etc`シェル設定を退避
-
----
-
-## ローカル設定 / Local Configuration
-
-### `setup-local-config.sh`
-
-**概要**: プライベート情報の設定とローカル環境設定
-**対象**: メールアドレス、Git設定、Google Drive設定など
-
-```bash
-setup-local-config.sh
-```
-
-#### 実行内容
-1. **既存チェック**: `~/.config/zsh/.zshrc.local`の存在確認
-2. **インタラクティブ設定**: メールアドレス等の入力
-3. **Google Drive検出**: 自動的にGoogle Driveの設定を検出
-4. **テンプレート処理**: `.zshrc.local.template`から設定ファイルを生成
-
-#### 設定される項目
-- **EMAIL**: プライマリメールアドレス
-- **GIT_AUTHOR_EMAIL**: Git作成者メール（プライマリを参照）
-- **GIT_COMMITTER_EMAIL**: Gitコミッターメール（プライマリを参照）
-- **GOOGLE_DRIVE_EMAIL**: Google Drive用メール（異なる場合のみ）
-
-#### 特徴
-- **スキップ機能**: 既存設定がある場合は自動スキップ
-- **readline対応**: バックスペース、矢印キーが正常動作
-- **自動検出**: Google Driveインストール状況を検出
 
 ---
 
@@ -738,7 +707,6 @@ brew bundle check
 │   └── update.sh        # 統合パッケージ更新
 ├── scripts/                 # セットアップスクリプト
 │   ├── setup.sh          # 統合セットアップ
-│   ├── setup-local-config.sh # ローカル設定
 │   ├── setup-homebrew.sh # Homebrew管理
 │   ├── setup-nix.sh      # Nix導入・nix-darwin適用
 │   ├── setup-apt.sh      # APTパッケージ管理（Linux用）

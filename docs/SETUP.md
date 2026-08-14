@@ -84,9 +84,6 @@ nix-darwin構成が現在のMacまたはユーザーに一致しない場合も�
 ### 利用可能なコマンド
 
 ```bash
-# ローカル設定
-setup-local-config.sh             # ローカル設定ファイルのセットアップ
-
 # Homebrew関連
 setup-homebrew.sh --update        # Homebrewとパッケージを更新
 setup-homebrew.sh --skip-apps     # Homebrewのみインストール、アプリはスキップ
@@ -134,30 +131,9 @@ clean_old_backups
 
 ### ローカル設定
 
-**プライベート情報の管理**
+このマシンだけの設定は`~/.config/zsh/.zshrc.local`に書きます。gitignoreの対象で、存在すれば`.zshrc`が読み込みます。
 
-このdotfilesはGitHubで公開されているため、メールアドレスなどのプライベート情報は別途管理されます：
-
-- **設定ファイル**: `~/.config/zsh/.zshrc.local`（gitignoreに含まれる）
-- **テンプレート**: `.config/zsh/.zshrc.local.template`
-- **自動セットアップ**: `setup-local-config.sh`スクリプトが初回実行時に自動で設定
-
-#### Google Drive設定
-
-スクリーンショットをGoogle Driveに保存する場合：
-
-```bash
-# 自動検出（Google Driveがインストール済みの場合）
-setup-local-config.sh
-
-# 手動設定（~/.config/zsh/.zshrc.localに追加）
-export EMAIL="your-primary@email.com"           # プライマリメールアドレス
-export GIT_AUTHOR_EMAIL="$EMAIL"                # Git用（プライマリを参照）
-export GIT_COMMITTER_EMAIL="$EMAIL"             # Git用（プライマリを参照）
-export GOOGLE_DRIVE_EMAIL="your-google@email.com" # Google Drive用（異なる場合のみ）
-```
-
-スクリーンショット保存先はnix-darwinのLaunchAgentがGoogle Driveを自動検出して設定します。
+スクリーンショットの保存先は、nix-darwinのLaunchAgentがGoogle Driveを自動検出して設定します。
 
 ### 環境変数
 
@@ -307,28 +283,9 @@ Steps are attempted independently. Failures and skipped steps are collected and 
 
 ## Local Configuration
 
-**Private Information Management**
+Machine-specific settings go in `~/.config/zsh/.zshrc.local`. It is gitignored and sourced by `.zshrc` if present.
 
-Since these dotfiles are publicly available on GitHub, private information like email addresses is managed separately:
-
-- **Configuration file**: `~/.config/zsh/.zshrc.local` (included in gitignore)
-- **Template**: `.config/zsh/.zshrc.local.template`
-- **Auto-setup**: `setup-local-config.sh` script automatically configures on first run
-
-### Google Drive Setup
-
-For saving screenshots to Google Drive:
-
-```bash
-# Auto-detection (if Google Drive is installed)
-setup-local-config.sh
-
-# Manual setup (add to ~/.config/zsh/.zshrc.local)
-export EMAIL="your-primary@email.com"           # Primary email address
-export GIT_AUTHOR_EMAIL="$EMAIL"                # For Git (references primary)
-export GIT_COMMITTER_EMAIL="$EMAIL"             # For Git (references primary)
-export GOOGLE_DRIVE_EMAIL="your-google@email.com" # For Google Drive (only if different)
-```
+The screenshot location is configured by a nix-darwin LaunchAgent that auto-detects Google Drive.
 
 The nix-darwin LaunchAgent detects Google Drive and configures the native screenshot location.
 
@@ -340,7 +297,6 @@ The nix-darwin LaunchAgent detects Google Drive and configures the native screen
 
 ### セットアップ系コマンド
 ```bash
-setup-local-config.sh         # ローカル設定のセットアップ
 setup-homebrew.sh --update    # Homebrewとパッケージの更新
 setup-mise.sh                 # 開発ツールのインストール/更新
 setup-links.sh                # dotfilesの再リンク（壊れたリンクの自動クリーンアップ）
@@ -389,7 +345,6 @@ Reusable scripts in `bin/` are symlinked to `~/.local/bin/` via `setup-links.sh`
 ### Setup Commands
 
 ```bash
-scripts/setup-local-config.sh # Setup local configuration
 scripts/setup-homebrew.sh --update # Update Homebrew and packages
 scripts/setup-mise.sh         # Install/update development tools
 bin/setup-links.sh            # Relink all dotfiles (automatically cleans broken links)

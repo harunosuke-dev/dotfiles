@@ -101,9 +101,6 @@ alias setup-links='$HOME/.local/bin/setup-links.sh'
 # Dotfiles health check (broken symlinks / dead configs / Brewfile drift)
 alias doctor='$HOME/.local/bin/doctor.sh'
 
-# Local configuration setup
-alias setup-local='$HOME/.local/bin/setup-local-config.sh'
-
 # zsh の履歴を 1Password へ退避・復元する（save / restore / diff）
 alias history-vault='$HOME/.local/bin/history-vault.sh'
 

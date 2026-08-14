@@ -209,12 +209,6 @@ for script in "$DOTFILES_HOME/bin/"*; do
     fi
 done
 
-# setup-local-config.sh は scripts/ 側にあるが、setup-localエイリアスとdocsから
-# 直接叩く前提になっているためPATHへ通す
-if [ -f "$DOTFILES_HOME/scripts/setup-local-config.sh" ]; then
-    safe_symlink "$DOTFILES_HOME/scripts/setup-local-config.sh" "$HOME/.local/bin/setup-local-config.sh"
-fi
-
 # Nix本体の導入とnix-darwinの再適用を個別に実行できるようPATHへ通す
 if [ -f "$DOTFILES_HOME/scripts/setup-nix.sh" ]; then
     safe_symlink "$DOTFILES_HOME/scripts/setup-nix.sh" "$HOME/.local/bin/setup-nix.sh"
