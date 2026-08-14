@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Get the directory where this script is located
+# symlink経由（~/.local/bin/use-template）でも実体を解決できるよう readlink -f を使う
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+TEMPLATES_DIR="$REPO_ROOT/templates"
+
+# Template script - no external dependencies needed
+
+usage() {
+    cat <<EOF
+Usage: use-template [OPTIONS] TEMPLATE_NAME
+
+Apply a template to the current directory.
+
+TEMPLATE_NAME:
+$(list_templates)
+
+OPTIONS:
+    -h, --help      Show this help message
+    -l, --list      List available templates
+    -d, --dry-run   Show what files would be copied without actually copying
+    -f, --force     Overwrite existing files
+
+EXAMPLES:
+    use-template editorconfig       # Apply editorconfig template
+    use-template -l                 # List available templates
+    use-template --dry-run editorconfig  # Preview what would be copied
+    use-template --force editorconfig    # Overwrite existing files
+
+EOF
+}
+
+list_templates() {
+    if [[ -d "$TEMPLATES_DIR" ]]; then
+        for template_dir in "$TEMPLATES_DIR"/*; do
+            if [[ -d "$template_dir" ]]; then
+                template_name="$(basename "$template_dir")"
+                echo "    $template_name"
+            fi
+        done
+    else
+        echo "    No templates found"
+    fi
+}
+
+apply_template() {
+    local template_name="$1"
+    local dry_run="${2:-false}"
+    local force="${3:-false}"
+    local template_path="$TEMPLATES_DIR/$template_name"
+
+    if [[ ! -d "$template_path" ]]; then
+        echo "Error: Template '$template_name' not found" >&2
+        echo "Available templates:" >&2
+        list_templates >&2
+        exit 1
+    fi
+
+    local files=()
+    local path
+    while IFS= read -r path; do
+        files+=("$(basename "$path")")
+    done < <(find "$template_path" -maxdepth 1 -type f)
+
+    if [[ ${#files[@]} -eq 0 ]]; then
+        echo "Error: Template '$template_name' contains no files" >&2
+        exit 1
+    fi
+
+    if [[ "$dry_run" == "true" ]]; then
+        echo "Files that would be copied from template '$template_name':"
+        printf '  %s\n' "${files[@]}"
+        return 0
+    fi
+
+    # 既存ファイルを黙って上書きさせない
+    if [[ "$force" != "true" ]]; then
+        local existing=()
+        local name
+        for name in "${files[@]}"; do
+            [[ -e "$name" ]] && existing+=("$name")
+        done
+        if [[ ${#existing[@]} -gt 0 ]]; then
+            echo "Error: The following files already exist:" >&2
+            printf '  %s\n' "${existing[@]}" >&2
+            echo "Use --force to overwrite." >&2
+            exit 1
+        fi
+    fi
+
+    echo "Applying template: $template_name"
+    local name
+    for name in "${files[@]}"; do
+        cp "$template_path/$name" "./$name"
+    done
+
+    echo "Template '$template_name' applied successfully"
+}
+
+main() {
+    local dry_run=false
+    local force=false
+    local template_name=""
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+        -h | --help)
+            usage
+            exit 0
+            ;;
+        -l | --list)
+            echo "Available templates:"
+            list_templates
+            exit 0
+            ;;
+        -d | --dry-run)
+            dry_run=true
+            shift
+            ;;
+        -f | --force)
+            force=true
+            shift
+            ;;
+        -*)
+            echo "Error: Unknown option $1" >&2
+            usage >&2
+            exit 1
+            ;;
+        *)
+            template_name="$1"
+            shift
+            ;;
+        esac
+    done
+
+    # Validate arguments
+    if [[ -z "$template_name" ]]; then
+        echo "Error: Template name is required" >&2
+        usage >&2
+        exit 1
+    fi
+
+    apply_template "$template_name" "$dry_run" "$force"
+}
+
+main "$@"
