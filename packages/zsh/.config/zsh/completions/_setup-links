@@ -1,0 +1,53 @@
+#compdef setup-links setup-links.sh
+
+# Zsh completion for setup-links script
+_setup-links() {
+    local context state line
+    typeset -A opt_args
+
+    # Get available packages from packages directory
+    local packages_dir="$HOME/Repos/github.com/$GITHUB_USER_NAME/dotfiles/packages"
+    if [[ -z "$GITHUB_USER_NAME" ]]; then
+        packages_dir="$(dirname "$(dirname "$(dirname "${words[1]:A}")")")/packages"
+    fi
+
+    local packages=()
+    if [[ -d "$packages_dir" ]]; then
+        packages=(${(f)"$(find "$packages_dir" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)"})
+    fi
+
+    _arguments -C \
+        '(--unlink-all)'{-u,--unlink}'[Unlink specified packages]:package:_setup_links_packages' \
+        '(-u --unlink)--unlink-all[Unlink all packages and scripts]' \
+        '--help[Show help message]' \
+        '-h[Show help message]' \
+        && return 0
+
+    return 1
+}
+
+# Custom completion for packages
+_setup_links_packages() {
+    local packages_dir="$HOME/Repos/github.com/$GITHUB_USER_NAME/dotfiles/packages"
+    if [[ -z "$GITHUB_USER_NAME" ]]; then
+        # Try to detect dotfiles directory from script location
+        local script_path="${words[1]:A}"
+        if [[ "$script_path" == */bin/setup-links.sh ]]; then
+            packages_dir="$(dirname "$(dirname "$script_path")")/packages"
+        elif [[ "$script_path" == */.local/bin/setup-links.sh ]]; then
+            # Follow symlink to find actual dotfiles directory
+            local real_script="$(readlink "$script_path")"
+            packages_dir="$(dirname "$(dirname "$real_script")")/packages"
+        fi
+    fi
+
+    if [[ -d "$packages_dir" ]]; then
+        local packages=(${(f)"$(find "$packages_dir" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)"})
+        _multi_parts / packages
+    else
+        _message "no packages directory found"
+    fi
+}
+
+_setup-links "$@"
+

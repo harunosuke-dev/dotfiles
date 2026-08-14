@@ -1,0 +1,23 @@
+#compdef update update.sh
+
+# Zsh completion for update script
+_update() {
+    local context state line
+    typeset -A opt_args
+
+    _arguments -C \
+        '--dry-run[Show what would be updated without making changes]' \
+        '--force[Skip confirmation prompts]' \
+        '--manager-only[Update only package managers themselves]' \
+        '--packages-only[Update only installed packages/plugins/tools]' \
+        '--all[Target all package managers]' \
+        '--help[Show help message]' \
+        '-h[Show help message]' \
+        '*::manager:(homebrew brew zinit mise)' \
+        && return 0
+
+    return 1
+}
+
+_update "$@"
+
