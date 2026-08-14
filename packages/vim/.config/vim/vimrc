@@ -327,6 +327,32 @@ augroup MyKeyMaps
 augroup END
 
 
+""" ----- IME -----
+" 日本語のまま normal モードへ戻ると操作できないため、英字へ自動で切り替える。
+" 50ms 待つのは <C-o> 系の割り当て（<C-a> / 矢印 / <S-Tab>）への対策
+" これらでも InsertLeave は発火するので、直後に InsertEnter が来たら取り消す
+if has('mac') && executable('macism')
+    let s:ime_timer = -1
+
+    function! s:ImeAsciiDefer() abort
+        let s:ime_timer = timer_start(50, {-> job_start(['macism', 'com.apple.keylayout.ABC'])})
+    endfunction
+
+    function! s:ImeAsciiCancel() abort
+        if s:ime_timer != -1
+            call timer_stop(s:ime_timer)
+            let s:ime_timer = -1
+        endif
+    endfunction
+
+    augroup ImeAscii
+        autocmd!
+        autocmd InsertLeave * call s:ImeAsciiDefer()
+        autocmd InsertEnter * call s:ImeAsciiCancel()
+    augroup END
+endif
+
+
 """ ----- Find -----
 " fzf が無い環境でも探せるようにしておく。
 " path+=** で :find が再帰的にファイル名を補完できるようになる
