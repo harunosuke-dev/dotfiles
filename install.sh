@@ -10,7 +10,7 @@ handle_install_error() {
 
 trap 'handle_install_error $LINENO' ERR
 
-GITHUB_USER_NAME=Harunosuke-web
+GITHUB_USER_NAME=harunosuke-dev
 
 DEFAULT_INSTALL_DIR="$HOME/.dotfiles"
 RUNNING_FROM_REPO=0

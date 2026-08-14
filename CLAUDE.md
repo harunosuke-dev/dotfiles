@@ -31,6 +31,7 @@ man/         自作スクリプトのmanページ
 ## Claudeへの注意
 
 - `~/.zshenv`や`~/.config/*`はこのリポジトリへのシンボリックリンク。**編集は必ずリポジトリの実体側**で行う（ホーム側を直接編集しようとするとsymlinkエラーになる）
-- `GITHUB_USER_NAME`は`scripts/common.sh`が唯一の定義場所。他で再定義しない
+- `GITHUB_USER_NAME`は`scripts/common.sh`が唯一の定義場所。他で再定義しない。ただし`install.sh`はclone前に走り`common.sh`をsourceできないため、例外として自前で持つ（値がズレると別アカウントからcloneするので、変更時は両方直す）
+- Claudeが作成した設計メモ・調査メモはGitで管理しない。`.git/info/exclude`でローカル除外する（`.gitignore`はリポジトリの構成を語る場所であり、作業の副産物を書く場所ではないため）
 - CLAUDE.md はグローバルgitignoreの対象外（通常どおりGitで追跡する）。プロジェクト側の`.claude/`はignoreされる
 - パッケージの一括削除や構成の大規模変更は、所有者に確認してから
