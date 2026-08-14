@@ -1,0 +1,52 @@
+### direnv
+
+.envrc
+
+### Windows
+
+[Dd]esktop.ini
+[Tt]humbs.db
+
+### macOS
+
+.DS*Store
+.*\*
+
+### Vim
+
+.\*.swp
+
+### VS Code
+
+.vscode/\*
+
+### C/C++
+
+compile_commands.json
+compile_flags.txt
+
+### Node.js
+
+node_modules/
+
+### Logs
+
+\*.log
+
+### Bundle
+
+.bundle/
+
+### Memo
+
+\_MEMO*
+\_memo*
+\_TODO*
+\_todo*
+\_TEST*
+\_test*
+
+### Claude Code
+
+.claude/
+
