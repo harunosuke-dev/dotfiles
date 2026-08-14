@@ -1,0 +1,10 @@
+--map-syntax=".clang-format:YAML"
+--map-syntax="vimrc:VimL"
+--map-syntax="**/git/conf.d/*.conf*:Git Config"
+--map-syntax="ignore:Git Ignore"
+--map-syntax="{.tmux,tmux}.conf:Bourne Again Shell (bash)"
+--map-syntax="*.editorconfig:INI"
+
+# GitHub Dark は同梱されていないため themes/ に .tmTheme を置いてある。
+# 追加・更新したら `bat cache --build` が要る（環境ごとに1回）。
+--theme="GitHub Dark"
