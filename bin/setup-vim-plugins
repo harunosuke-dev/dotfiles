@@ -1,0 +1,25 @@
+#!/bin/sh
+# Vim の外部プラグインを導入する。
+#
+# Vim の起動時には実行されない。新しい環境を用意した時に手動で叩く。
+# 起動時にネットワークへ触れないようにするため、vimrc からは呼ばない。
+#
+# fzf 本体（PATH 上のコマンド）はここでは扱わない。
+# Homebrew / Nix / OS のパッケージマネージャで入れる。
+# fzf が無い環境では、vimrc が :find / :vimgrep へフォールバックする。
+set -eu
+
+dest="${XDG_DATA_HOME:-$HOME/.local/share}/vim/pack/plugins/start"
+mkdir -p "$dest"
+
+for repo in tpope/vim-surround junegunn/fzf.vim; do
+    dir="$dest/$(printf '%s' "$repo" | tr '/' '-')"
+    if [ -d "$dir" ]; then
+        printf 'already installed: %s\n' "$repo"
+    else
+        printf 'installing: %s\n' "$repo"
+        git clone --depth 1 "https://github.com/$repo" "$dir"
+    fi
+done
+
+printf '\ndone. plugin dir: %s\n' "$dest"

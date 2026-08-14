@@ -1,0 +1,60 @@
+.TH UPDATE 1 "January 2025" "dotfiles" "User Commands"
+.SH NAME
+update \- update package managers (homebrew, zinit, mise)
+.SH SYNOPSIS
+.B update
+[\fB\-\-dry\-run\fR] [\fB\-\-force\fR] [\fB\-\-manager\-only\fR] [\fB\-\-packages\-only\fR] [\fB\-\-all\fR] [\fImanager\fR...]
+.SH DESCRIPTION
+Updates package managers and their packages. Without arguments, presents a two-stage selection: first choose package managers, then choose update scope.
+.SH OPTIONS
+.TP
+.B \-\-dry\-run
+Preview updates without applying
+.TP
+.B \-\-force
+Skip confirmation prompts
+.TP
+.B \-\-manager\-only
+Update only package managers themselves
+.TP
+.B \-\-packages\-only
+Update only installed packages/plugins/tools
+.TP
+.B \-\-all
+Target all package managers
+.TP
+.B \-h, \-\-help
+Show help
+.SH MANAGERS
+.TP
+.B homebrew, brew
+Update Homebrew + packages
+.TP
+.B zinit
+Update zinit + plugins
+.TP
+.B mise
+Update mise + tools
+.SH EXAMPLES
+.TP
+update
+Two-stage selection: managers then scope
+.TP
+update \-\-all
+Interactive update scope for all managers
+.TP
+update homebrew
+Update only Homebrew (interactive scope choice)
+.TP
+update \-\-manager\-only
+Update only package managers themselves
+.TP
+update \-\-packages\-only homebrew
+Update only Homebrew packages
+.TP
+update \-\-dry\-run zinit
+Preview zinit updates
+.SH FILES
+.I ~/.local/state/system-update.log
+.SH AUTHOR
+dotfiles collection

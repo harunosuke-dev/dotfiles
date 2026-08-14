@@ -1,0 +1,105 @@
+.TH SETUP-LINKS 1 "September 2025" "dotfiles" "User Commands"
+.SH NAME
+setup\-links \- manage symlinks for dotfiles configuration using GNU stow
+.SH SYNOPSIS
+.B setup\-links
+[\fB\-u\fR|\fB\-\-unlink\fR \fIpackage\fR...] [\fB\-\-unlink\-all\fR]
+.SH DESCRIPTION
+Creates and manages symlinks for dotfiles configuration using GNU stow. By default, creates symlinks for all packages and makes utility scripts globally accessible via ~/.local/bin.
+.PP
+This script performs the following operations:
+.IP \[bu] 2
+Automatically cleans up broken symlinks pointing to dotfiles packages
+.IP \[bu] 2
+Creates necessary XDG directories
+.IP \[bu] 2
+Links all packages from packages/ directory using stow
+.IP \[bu] 2
+Creates global symlinks for utility scripts in ~/.local/bin
+.IP \[bu] 2
+Links manual pages and completions
+.SH OPTIONS
+.TP
+.B \-u, \-\-unlink \fIpackage\fR...
+Unlink specified packages. Multiple packages can be specified.
+.TP
+.B \-\-unlink\-all
+Unlink all packages and remove all global script symlinks.
+.TP
+.B \-h, \-\-help
+Display help message and exit.
+.SH DIRECTORIES
+The script creates and manages the following directories:
+.TP
+.B $XDG_CONFIG_HOME
+Configuration files directory (~/.config by default)
+.TP
+.B $XDG_STATE_HOME
+State files directory (~/.local/state by default)
+.TP
+.B $XDG_CACHE_HOME
+Cache files directory (~/.cache by default)
+.TP
+.B ~/.ssh
+SSH configuration directory (with 700 permissions)
+.TP
+.B ~/.local/bin
+Global script symlinks directory
+.SH BACKUP SYSTEM
+Before creating symlinks, existing files are automatically backed up to:
+.PP
+.B ~/.local/state/dotfiles/backup/
+.PP
+Backup files are named with a timestamp: \fIfilename\fR.YYYYMMDD_HHMMSS
+.SH GLOBAL SCRIPT ACCESS
+After running setup\-links, utility scripts become globally accessible:
+.IP \[bu] 2
+update \- System package manager updater
+.IP \[bu] 2
+setup\-links.sh \- This script (recursive global access)
+.IP \[bu] 2
+All other scripts from bin/ directory
+.SH EXAMPLES
+.TP
+.B setup\-links
+Link all packages and create global script access
+.TP
+.B setup\-links \-\-unlink vim nvim
+Unlink specific packages (vim and nvim)
+.TP
+.B setup\-links \-\-unlink\-all
+Remove all symlinks and global script access
+.SH ENVIRONMENT VARIABLES
+.TP
+.B DOTFILES_HOME
+Path to dotfiles repository (auto-detected)
+.TP
+.B GHQ_ROOT_PATH
+Root path for ghq repositories
+.TP
+.B GITHUB_USER_NAME
+GitHub username for repository path
+.SH FILES
+.TP
+.B ~/.local/state/dotfiles/backup/
+Automatic backup directory for replaced files
+.TP
+.B packages/
+Source directory containing stow packages
+.TP
+.B bin/
+Source directory for utility scripts
+.SH SAFETY FEATURES
+.IP \[bu] 2
+Automatic backup of existing files before symlinking
+.IP \[bu] 2
+Intelligent link detection (skips existing correct links)
+.IP \[bu] 2
+Broken symlink cleanup specific to dotfiles
+.IP \[bu] 2
+Safe overwrites with backup
+.SH SEE ALSO
+.BR stow (8),
+.BR update (1)
+.SH AUTHOR
+Part of personal dotfiles configuration management system.
