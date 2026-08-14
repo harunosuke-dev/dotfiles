@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# tmux の popup を、ステータスラインを避けた位置に開く。
+#
+#   tmux-popup full   <コマンド...>   画面いっぱい（ステータスラインの下を全部）
+#   tmux-popup center <コマンド...>   中央に 90%
+#
+# 使い分けは「その道具に何分いるか」で決める。
+#   full    腰を据えて作業するもの（lazygit）。面積が要る
+#   center  選んで消えるもの（セッション切替・navi）。周囲が見えた方が
+#           一時的に重なっていると分かる。fzf のピッカーと同じ見た目になる
+#
+# tmux の -y は popup の「下端」の行を指す（-x は左端）。上端を渡すと画面に
+# 収まらず、上端へ押し戻されて指定が無視される。
+#
+# -h は式（#{...}）を受け付けない（height invalid）ため、ここで数えて渡す。
+# また tmux は高さからステータスライン分を引くのに位置は行0から数えるため、
+# 既定のままだと popup が1行ぶん上に寄る。上端を自分で出して打ち消す。
+set -e
+
+mode=${1:?usage: tmux-popup <full|center> <command...>}
+shift
+
+height=$(tmux display -p '#{client_height}')
+cwd=$(tmux display -p '#{pane_current_path}')
+
+# 1 はステータスラインの行数。status-position top が前提
+case "$mode" in
+  full)
+    width=100%
+    rows=$((height - 1))
+    top=1
+    ;;
+  center)
+    width=90%
+    rows=$((height * 90 / 100))
+    top=$((1 + (height - 1 - rows) / 2))
+    ;;
+  *)
+    echo "tmux-popup: unknown mode: $mode" >&2
+    exit 2
+    ;;
+esac
+
+tmux popup \
+  -w "$width" \
+  -h "$rows" \
+  -y "$((top + rows))" \
+  -d "$cwd" \
+  -E "$*"

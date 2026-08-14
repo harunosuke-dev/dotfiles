@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# tmuxセッション削除ツール
+# fzfでインタラクティブにセッションを選択して削除
+
+current_session=$(tmux display-message -p '#S')
+sessions=$(tmux list-sessions -F '#{session_name}' | grep -v "^$current_session$" | sort)
+
+if [ -z "$sessions" ]; then
+    echo "No other sessions available to delete"
+    sleep 1
+    exit 0
+fi
+
+# fzfでセッションを選択（基本プレビュー版）
+selected_session=$(echo "$sessions" | fzf \
+    --height=100% \
+    --layout=reverse \
+    --border \
+    --prompt="Delete session: " \
+    --header="Current session: $current_session (protected)" \
+    --preview="echo 'Target: {}'; echo 'Windows:'; tmux list-windows -t {} -F '  #{window_index}: #{window_name} (#{pane_current_command})'" \
+    --preview-window="right:50%")
+
+if [ -n "$selected_session" ]; then
+    # 確認プロンプト
+    echo -n "Delete session '$selected_session'? [y/N]: "
+    read -r confirmation
+    
+    case "$confirmation" in
+        [yY]|[yY][eE][sS])
+            tmux kill-session -t "$selected_session"
+            echo "Session '$selected_session' deleted"
+            sleep 1
+            ;;
+        *)
+            echo "Cancelled"
+            sleep 0.5
+            ;;
+    esac
+fi

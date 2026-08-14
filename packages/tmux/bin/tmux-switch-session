@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# tmuxセッション切り替えツール
+# fzfでインタラクティブにセッションを選択して切り替え
+
+current_session=$(tmux display-message -p '#S')
+sessions=$(tmux list-sessions -F '#{session_name}' | grep -v "^$current_session$" | sort)
+
+if [ -z "$sessions" ]; then
+    echo "No other sessions available to switch to"
+    sleep 1
+    exit 0
+fi
+
+# fzfでセッションを選択（基本プレビュー版）
+selected_session=$(echo "$sessions" | fzf \
+    --height=100% \
+    --layout=reverse \
+    --border \
+    --prompt="Switch to session: " \
+    --header="Current session: $current_session" \
+    --preview="echo 'Session: {}'; echo 'Windows:'; tmux list-windows -t {} -F '  #{window_index}: #{window_name} (#{pane_current_command})'" \
+    --preview-window="right:50%")
+
+if [ -n "$selected_session" ]; then
+    tmux switch-client -t "$selected_session"
+fi
