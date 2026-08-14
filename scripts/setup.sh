@@ -73,10 +73,12 @@ print_summary() {
 }
 
 run_full_setup() {
+    run_step "Install Nix" /bin/bash "$CUR_DIR/setup-nix.sh" install
     run_step "Install Homebrew packages" /bin/bash "$CUR_DIR/setup-homebrew.sh"
     run_step "Link dotfiles" /bin/bash "$CUR_DIR/../bin/setup-links.sh"
     run_step "Create local configuration" /bin/bash "$CUR_DIR/setup-local-config.sh"
     run_step "Apply macOS defaults" /bin/bash "$CUR_DIR/macos-defaults.sh"
+    run_step "Apply nix-darwin" /bin/bash "$CUR_DIR/setup-nix.sh" apply
     run_step "Install APT packages" /bin/bash "$CUR_DIR/setup-apt.sh"
     run_step "Install mise tools" /bin/bash "$CUR_DIR/setup-mise.sh"
     run_step "Install zinit" /bin/bash "$CUR_DIR/setup-zinit.sh"
@@ -88,6 +90,7 @@ run_full_setup() {
 run_update_setup() {
     run_step "Update Homebrew packages" /bin/bash "$CUR_DIR/setup-homebrew.sh" --update
     run_step "Relink dotfiles" /bin/bash "$CUR_DIR/../bin/setup-links.sh"
+    run_step "Apply nix-darwin" /bin/bash "$CUR_DIR/setup-nix.sh" apply
     run_step "Update mise tools" /bin/bash "$CUR_DIR/setup-mise.sh"
     run_step "Rebuild bat theme cache" /bin/bash "$CUR_DIR/setup-bat.sh"
 }

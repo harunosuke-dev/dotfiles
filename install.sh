@@ -18,7 +18,8 @@ RUNNING_FROM_REPO=0
 # clone済みリポジトリのinstall.shを実行した場合は、その場所をそのまま使う。
 # パイプ実行などで$0が実ファイルを指さない場合は、従来のGHQ配下を使用する。
 script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd)"
-if [ -f "$script_dir/install.sh" ] && [ -d "$script_dir/.git" ]; then
+if [ -f "$script_dir/install.sh" ] && [ -d "$script_dir/.git" ] && \
+    [ -f "$script_dir/flake.nix" ]; then
     DEFAULT_INSTALL_DIR="$script_dir"
     RUNNING_FROM_REPO=1
 fi
