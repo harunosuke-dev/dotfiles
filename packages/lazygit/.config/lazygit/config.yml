@@ -1,0 +1,87 @@
+disableStartupPopups: true
+quitOnTopLevelReturn: true
+promptToReturnFromSubprocess: false
+notARepository: skip
+git:
+  autoFetch: false
+  disableForcePushing: true
+  parseEmoji: true
+  pagers:
+    - colorArg: always
+      pager: delta --paging=never
+  log:
+    showGraph: always
+gui:
+  showRandomTip: false
+  showIcons: false
+  theme:
+    activeBorderColor:
+      - "#6DB3D4" # Muted soft blue
+    inactiveBorderColor:
+      - "#6A7580" # Muted gray
+    optionsTextColor:
+      - "#8FA8B2" # Soft blue-gray
+    selectedLineBgColor:
+      - "#1A1F24" # Very subtle dark background
+    selectedRangeBgColor:
+      - "#1A1F24" # Same as selected line
+    cherryPickedCommitBgColor:
+      - "#181C21" # Minimal background
+    cherryPickedCommitFgColor:
+      - "#7A9FC7" # Muted blue
+    unstagedChangesColor:
+      - "#C97064" # Muted red
+    # Soft, muted colors for low contrast
+    defaultFgColor:
+      - "#B8BCC8" # Soft light gray
+    searchingActiveBorderColor:
+      - "#C6A86D" # Muted yellow
+    # Very soft diff colors
+    addedBgColor:
+      - default # No background color
+    addedFgColor:
+      - "#7A9A7A" # Muted green
+    deletedBgColor:
+      - default # No background color
+    deletedFgColor:
+      - "#C97064" # Muted red
+    modifiedBgColor:
+      - default # No background color
+    modifiedFgColor:
+      - "#C6A86D" # Muted yellow
+os:
+  openCommand: "code --goto -- {{filename}}:{{line}}"
+  editCommand: "nvim"
+  editCommandTemplate: "{{editor}} +{{line}} -- {{filename}}"
+
+# keybinding:
+#   commits:
+#     viewResetOptions: G
+
+# ステージ済みの変更を Conventional Commits 形式でコミットする：
+# files パネルで c -> type選択 -> scope(任意) -> 件名
+#
+# 既定の c（コミット欄）を置き換えている
+# 本文が要る時は C でエディタを開いて書く
+customCommands:
+  - key: "c"
+    context: "files"
+    description: "Conventional commit (type/scope/件名)"
+    prompts:
+      - type: "menu"
+        title: "type を選択"
+        options:
+          - { name: "feat:     新機能", value: "feat" }
+          - { name: "style:    見た目・整形", value: "style" }
+          - { name: "fix:      バグ修正", value: "fix" }
+          - { name: "refactor: リファクタ", value: "refactor" }
+          - { name: "chore:    雑務・設定など", value: "chore" }
+          - { name: "docs:     ドキュメント", value: "docs" }
+      - type: "input"
+        title: "scope（任意・空でOK 例: mdx, zsh）"
+      - type: "input"
+        title: "件名"
+        # 「type(scope): 」を最初から入れて、続けて件名を打つ。scopeが空なら括弧なし。
+        initialValue: "{{index .PromptResponses 0}}{{if index .PromptResponses 1}}({{index .PromptResponses 1}}){{end}}: "
+    command: 'git commit -m "{{index .PromptResponses 2}}"'
+    loadingText: "committing..."
