@@ -59,27 +59,6 @@ _hist_commit_on_success() {
 (( ${precmd_functions[(Ie)_hist_commit_on_success]} )) || precmd_functions=(_hist_commit_on_success $precmd_functions)
 
 
-### ディレクトリを移動したら中身を出す ###
-
-autoload -Uz add-zsh-hook
-
-_ll_on_chpwd() {
-    [[ -o interactive ]] || return
-    ll
-}
-add-zsh-hook chpwd _ll_on_chpwd
-
-# tmux のセッション作成やペイン分割で立ち上がるシェルは cd を経ないため
-# chpwd が発火しない。最初のプロンプトの直前に1回だけ同じものを出して揃える。
-# 出したらフックを外すので、2回目以降のプロンプトでは走らない
-_ll_on_first_prompt() {
-    add-zsh-hook -d precmd _ll_on_first_prompt
-    [[ -o interactive ]] || return
-    ll
-}
-add-zsh-hook precmd _ll_on_first_prompt
-
-
 ### zsh Widget Functions ###
 
 # Clear screen with prompt update

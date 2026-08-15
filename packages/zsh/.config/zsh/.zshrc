@@ -42,7 +42,6 @@
 # - cdg    : ghq repository -> cd（コマンド。インラインの fzf）
 #
 # tmux セッションの削除は tmux 側の prefix + C-x のみ。
-# cd すると自動で ll が走る（02-functions.zsh の chpwd フック）
 #
 # Completion (zsh 標準 compinit のみ。zsh-autocomplete と fzf-tab は外した):
 # - Tab        : 共通接頭辞まで補完。もう一度押すとメニューへ入り候補を巡る
