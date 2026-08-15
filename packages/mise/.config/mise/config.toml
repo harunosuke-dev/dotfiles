@@ -28,5 +28,4 @@ log_level = "info"
 
 [tools]
 node = "lts"
-python = "3.14"
-go = "1.26"
+python = "latest"

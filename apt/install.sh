@@ -35,12 +35,17 @@ packages=(
     wget            # Retrieves files from the web
     xz-utils        # XZ decompression (mise が Node の .tar.xz を展開するのに使う)
     zsh             # Shell with lots of features
+    libbz2-dev      # 以下7つは mise が Python をソースビルドするのに必要
+    libffi-dev      #
+    liblzma-dev     #
+    libreadline-dev #
+    libsqlite3-dev  #
+    libssl-dev      #
+    zlib1g-dev      # 上記Pythonビルド依存の残り1つ
 )
 
 # 必要になったら有効化する候補（配列の外に置く。中に混ぜると整形時に列がずれる）
 #   gdb clangd                 C言語のデバッグとLSP。コンパイラ自体は build-essential の gcc で足りる
-#   libssl-dev libsqlite3-dev zlib1g-dev libbz2-dev libreadline-dev libffi-dev liblzma-dev
-#                              mise で Python をソースビルドする際に必要（Linuxで使うなら一式で）
 
 apt-get install -y "${packages[@]}"
 
