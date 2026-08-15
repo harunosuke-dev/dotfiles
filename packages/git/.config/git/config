@@ -53,7 +53,7 @@
     path = conf.d/alias.conf
     path = conf.d/delta.conf
     path = conf.d/ghq.conf
-    # path = conf.d/local.conf
+    path = conf.d/local.conf # gitignore対象
 
 [includeIf "gitdir/i:~/Repos/github.com/Harunosuke-web/"]
     path = conf.d/user-web.conf
