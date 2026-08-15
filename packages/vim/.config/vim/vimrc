@@ -327,6 +327,16 @@ augroup MyKeyMaps
 augroup END
 
 
+""" ----- Formatting -----
+" コミットメッセージで copy & paste などで勝手に改行させない。
+" 標準の ftplugin が textwidth=72 と formatoptions+=t を入れるため、72桁を超えると直前の空白が改行に変わる。
+" textwidth は目安として残すので、整えたい時は gq が使える。
+augroup NoAutoWrap
+    autocmd!
+    autocmd FileType gitcommit setlocal formatoptions-=t
+augroup END
+
+
 """ ----- IME -----
 " 日本語のまま normal モードへ戻ると操作できないため、英字へ自動で切り替える。
 " 50ms 待つのは <C-o> 系の割り当て（<C-a> / 矢印 / <S-Tab>）への対策
