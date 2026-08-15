@@ -1,0 +1,114 @@
+###########################################################
+# 修飾キーの方針
+#
+#   alt + shift    見るものを変える（フォーカス・レイアウト・アプリ起動）
+#   ctrl + alt     ウィンドウを動かす（warp・ディスプレイ送り・挿入方向）
+#
+# 同じ hjkl に対して修飾キーだけを変える。タイル型ウィンドウマネージャの
+# 慣習（focus と move を同じ方向キーで揃える）に沿っている。
+#
+# cmd 系は一切使わない。ランチャーなど他の用途のために空けておく。
+#
+# alt 単独にも何も割り当てない。skhd は OS 全体でキーを横取りするため、
+# 割り当てると端末側に届かなくなる。実際に以下が潰れていた。
+#
+#   Alt + f   zsh の tmux-sessionizer-popup
+#   Alt + ,   zsh の _history-complete-newer
+#   Alt + j/k tmux のペイン移動
+###########################################################
+
+###########################################################
+# Layout
+###########################################################
+
+# bsp（タイル）と stack（全ウィンドウを最大化して重ねる）を切り替える
+alt + shift - space : [ "$(yabai -m query --spaces --space | jq -r '.type')" = bsp ] \
+    && yabai -m space --layout stack \
+    || yabai -m space --layout bsp
+
+# フロートレイアウト
+alt + shift - f : yabai -m space --layout float
+
+# 分割比を均等に戻す
+alt + shift - e : yabai -m space --balance
+
+# 上下と左右を入れ替える
+ctrl + alt - m : yabai -m space --mirror y-axis \
+    && yabai -m window --focus first
+
+# 90度回す
+alt + shift - r : yabai -m space --rotate 270
+
+###########################################################
+# Window: フォーカス
+###########################################################
+
+# bsp（タイル）配置では画面上の位置関係で移動し、stack や全ウィンドウを
+# フロートさせている時（alt + shift - c）は位置を無視して全ウィンドウを
+# ループ巡回する。判定は focus_dir.sh 側で行う
+alt + shift - h : ~/.config/yabai/focus_dir.sh west
+alt + shift - j : ~/.config/yabai/focus_dir.sh south
+alt + shift - k : ~/.config/yabai/focus_dir.sh north
+alt + shift - l : ~/.config/yabai/focus_dir.sh east
+alt + shift - tab : yabai -m window --focus stack.recent \
+    || yabai -m window --focus recent
+
+###########################################################
+# Window: 位置とサイズ
+###########################################################
+
+# ウィンドウ自体を入れ替える。フォーカス移動と同じ hjkl で修飾キーだけ変える
+ctrl + alt - k : yabai -m window --warp prev
+ctrl + alt - j : yabai -m window --warp next
+ctrl + alt - h : yabai -m window --warp west
+ctrl + alt - l : yabai -m window --warp east
+
+# 次に開くウィンドウをどちら側に入れるか
+ctrl + alt - i : yabai -m window --insert east
+ctrl + alt - o : yabai -m window --insert south
+
+# 幅を変える
+# Alt + Shift + [ （0x21）で狭める
+alt + shift - 0x21 : yabai -m window --resize left:-40:0 \
+    || yabai -m window --resize right:-40:0
+# Alt + Shift + ] （0x1E）で広げる
+alt + shift - 0x1E : yabai -m window --resize right:40:0 \
+    || yabai -m window --resize left:40:0
+
+# スペースの全ウィンドウをフロート化して中央に重ねる。もう一度で元に戻す。
+# 重なった状態のまま alt + shift - j / k で切り替えられる
+alt + shift - c : ~/.config/yabai/toggle_float_space.sh
+
+###########################################################
+# Display
+###########################################################
+
+# フォーカスを別のディスプレイへ
+# Alt + Shift + , （0x2B）
+alt + shift - 0x2B : yabai -m display --focus prev \
+    && yabai -m display --focus stack.prev
+# Alt + Shift + . （0x2F）
+alt + shift - 0x2F : yabai -m display --focus next \
+    && yabai -m display --focus stack.next
+
+# ウィンドウごと別のディスプレイへ送る
+# Ctrl + Alt + , （0x2B）
+ctrl + alt - 0x2B : yabai -m window --display prev \
+    && yabai -m display --focus prev
+# Ctrl + Alt + . （0x2F）
+ctrl + alt - 0x2F : yabai -m window --display next \
+    && yabai -m display --focus next
+
+###########################################################
+# Space
+###########################################################
+
+alt + shift - m : yabai -m space --toggle mission-control
+
+###########################################################
+# Applications
+###########################################################
+
+alt + shift - return : open /Applications/Ghostty.app
+alt + shift - 0 : open /Applications/Brave\ Browser.app
+alt + shift - n : open /Applications/Notion.app
