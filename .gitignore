@@ -9,7 +9,3 @@ local.*
 .zcomp*
 .zsh_sessions
 
-### Zed local state ###
-# プロンプトライブラリのローカルDB（マシン固有・バイナリ）
-packages/zed/.config/zed/prompts/
-
