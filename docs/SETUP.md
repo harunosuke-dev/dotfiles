@@ -266,7 +266,7 @@ cd "$HOME/.dotfiles"
 - **mise**: Runtime version manager
 - **zinit**: Zsh plugin manager
 - **GNU stow**: Dotfiles symlink manager
-- **CLI tools**: Defined in `homebrew/.config/homebrew/Brewfile`
+- **CLI tools**: Defined in `homebrew/Brewfile`
 
 ## Setup Process
 
