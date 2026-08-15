@@ -9,16 +9,16 @@
 
 ### macOS
 
-.DS*Store
-.*\*
+.DS_Store
+._*
 
 ### Vim
 
-.\*.swp
+.*.swp
 
 ### VS Code
 
-.vscode/\*
+.vscode/*
 
 ### C/C++
 
@@ -31,7 +31,7 @@ node_modules/
 
 ### Logs
 
-\*.log
+*.log
 
 ### Bundle
 
@@ -39,12 +39,12 @@ node_modules/
 
 ### Memo
 
-\_MEMO*
-\_memo*
-\_TODO*
-\_todo*
-\_TEST*
-\_test*
+_MEMO*
+_memo*
+_TODO*
+_todo*
+_TEST*
+_test*
 
 ### Claude Code
 
