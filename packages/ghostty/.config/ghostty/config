@@ -1,0 +1,60 @@
+# ─── フォント ────────────────────────────────────────────────
+font-family = "UDEV Gothic 35NF"
+font-size = 15
+
+# ─── ウィンドウ ──────────────────────────────────────────────
+# タイトルバー・枠・信号機ボタンを全て除去する
+# macOS の仕様でタブ機能も無効になる - 分割・タブは tmux が担う
+window-decoration = none
+
+window-padding-x = 6
+window-padding-y = 6
+window-padding-balance = true
+
+# ─── 透過 ────────────────────────────────────────────────────
+# nvim は本文の背景を塗らずに端末の色を透けさせている
+# （lua/config/options.lua の transparent_background）
+# ここを薄くするとエディタの本文まで透ける。tmux のペイン背景も同様。
+background-opacity = 0.85
+background-blur = 80
+
+# ─── カーソル ────────────────────────────────────────────────
+cursor-style = bar
+cursor-style-blink = false
+
+# ─── 配色（Alacritty の設定から移植）─────────────────────────
+background = #07080d
+
+# 既定より白寄りにしている
+# IME の変換前テキストはこの色で描かれ、tmux 側で本文を 25% 沈めているため、未確定の文字だけが明るく浮く。
+foreground = #cad2e1
+
+palette = 0=#141313
+palette = 1=#ee5396
+palette = 2=#00ff00
+palette = 3=#f3f89d
+palette = 4=#c9a8fa
+palette = 5=#ff92d0
+palette = 6=#99ecfd
+palette = 7=#e5e9f0
+palette = 8=#282828
+palette = 9=#ee5396
+palette = 10=#00ff00
+palette = 11=#f3f89d
+palette = 12=#c9a8fa
+palette = 13=#ff92d0
+palette = 14=#99ecfd
+palette = 15=#eceff4
+
+selection-background = #414d58
+selection-foreground = #f8f8f2
+cursor-color = #eceff4
+cursor-text = #3b4252
+
+# ─── 挙動 ────────────────────────────────────────────────────
+scrollback-limit = 10000000
+copy-on-select = true
+
+# Use right/left option key as Alt.
+# macos-option-as-alt = true# 取りうる値は true / false / left / right の4つで、両方を指す値は true
+macos-option-as-alt = true

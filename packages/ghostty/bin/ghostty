@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Ghostty の CLI を PATH から使えるようにするラッパー。
+# Homebrew の cask はアプリ本体と man ページしか配置せず、
+# 実行ファイルはアプリバンドルの中にあるため PATH から呼べない。
+#
+# 用途例:
+#   ghostty +show-config          現在の設定を確認
+#   ghostty +show-config --default --docs   全オプションと説明
+#   ghostty +validate-config      設定ファイルの検証
+#   ghostty +list-actions         キーバインドに使えるアクション一覧
+set -euo pipefail
+
+GHOSTTY_BIN="/Applications/Ghostty.app/Contents/MacOS/ghostty"
+
+if [ ! -x "$GHOSTTY_BIN" ]; then
+    echo "ghostty: 実行ファイルが見つかりません: $GHOSTTY_BIN" >&2
+    echo "         brew install --cask ghostty で導入してください" >&2
+    exit 1
+fi
+
+exec "$GHOSTTY_BIN" "$@"
+

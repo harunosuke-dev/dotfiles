@@ -1,0 +1,188 @@
+# Inserts a blank line between shell prompts
+add_newline = false
+
+right_format = """
+$pijul_channel\
+$docker_context\
+$package\
+$c\
+$cmake\
+$cobol\
+$daml\
+$dart\
+$deno\
+$dotnet\
+$elixir\
+$elm\
+$erlang\
+$fennel\
+$golang\
+$guix_shell\
+$haskell\
+$haxe\
+$helm\
+$java\
+$julia\
+$kotlin\
+$gradle\
+$lua\
+$nim\
+$nodejs\
+$ocaml\
+$opa\
+$perl\
+$php\
+$pulumi\
+$purescript\
+$python\
+$raku\
+$rlang\
+$red\
+$ruby\
+$rust\
+$scala\
+$swift\
+$terraform\
+$vlang\
+$vagrant\
+$zig\
+$buf\
+$nix_shell\
+$conda\
+$meson\
+$spack\
+$env_var\
+$crystal\
+$custom\
+$sudo\
+$jobs\
+$status\
+$container\
+$shell\
+$aws\
+$gcloud\
+$openstack\
+$azure\
+$battery\
+$os\
+$memory_usage\
+$time\
+"""
+
+format = """
+$username\
+$hostname\
+$localip\
+$shlvl\
+$singularity\
+$kubernetes\
+$directory\
+$vcsh\
+$fossil_branch\
+$git_branch\
+$git_commit\
+$git_state\
+$git_metrics\
+$git_status\
+$hg_branch\
+$character"""
+
+[hostname]
+ssh_only = true
+ssh_symbol = "󰇧 "
+
+[directory]
+format = "[  $path ]($style)"
+home_symbol = "~"
+style = "fg:#F47FFF"
+truncate_to_repo = false
+truncation_length = 100
+[directory.substitutions]
+"~/Repos/github.com/" = ""
+
+[git_branch]
+style = "fg:#00ff00"
+symbol = "\ue725 "
+
+[git_status]
+# style = "fg:#769ff0"
+staged = '+[+$count](green)'
+# up_to_date = '✓'
+ahead = '⇡[+$count](#769ff0)'
+deleted = '✘[$count](#769ff0)'
+format = '([\[$conflicted$stashed$deleted$renamed$modified$untracked$ahead_behind$staged\]]($style))'
+ignore_submodules = true
+
+[time]
+# disabled = false
+# format = "at [\ue38a$time]($style)"
+# style = "fg:#8DFBD2"
+# time_format = " %R" # Hour:Minute Format
+
+[character]
+error_symbol = '[ ✗](#E84D44) '
+success_symbol = '[ ❯](bold green) '
+
+[package]
+symbol = "\ueb29 "
+
+[nodejs]
+symbol = "\ued0d node "
+
+[lua]
+symbol = "\ue826 lua "
+
+[rust]
+symbol = "\ue7a8 rust "
+
+[golang]
+symbol = "\ue627 go "
+
+[deno]
+symbol = "\ue7c0 deno "
+
+[php]
+symbol = "php "
+
+[python]
+symbol = "\ue81b python "
+
+[c]
+symbol = "\ue771 c "
+
+# ==========================================
+#  Additional Language Icons with Labels
+# ==========================================
+
+[cpp]
+symbol = "cpp "
+
+[ruby]
+symbol = "\ue739 ruby "
+
+[java]
+symbol = "\ue738 java "
+
+[swift]
+symbol = "swift "
+
+[kotlin]
+symbol = "\ue81b kotlin"
+
+[dart]
+symbol = "dart "
+
+[elixir]
+symbol = "elixir "
+
+[haskell]
+symbol = "haskell "
+
+[julia]
+symbol = "julia "
+
+[scala]
+symbol = "scala "
+
+[terraform]
+symbol = "󱁢 terraform"
