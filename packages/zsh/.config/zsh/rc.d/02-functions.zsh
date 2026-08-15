@@ -10,7 +10,6 @@
 # 自作のウィジェットは Alt へ寄せてある。
 #
 # - Ctrl+R : widget::history() - fzf の履歴検索
-# - Ctrl+T : fzf-file-widget - fzf のファイル選択（fzf 同梱）
 # - Ctrl+Z : fz() - zoxide の履歴から cd（emacs キーマップで空き）
 # - Alt+C : fzf-cd-widget - カレント配下のディレクトリへ cd（fzf 同梱）
 # - Alt+F : tmux sessionizer（= tmux prefix + C-f, popup）

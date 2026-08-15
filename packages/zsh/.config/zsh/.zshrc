@@ -31,7 +31,6 @@
 #
 # fzf Integration (fzf-key-bindings.zsh):
 # - Ctrl+R : History search (custom widget / 02-functions.zsh)
-# - Ctrl+T : File selection widget
 # - Alt+C  : Directory selection widget
 #
 # Custom (02-functions.zsh):
