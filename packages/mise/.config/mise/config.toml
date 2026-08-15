@@ -1,0 +1,32 @@
+[settings]
+# Enable legacy version files (.nvmrc, .python-version, etc)
+legacy_version_file = true
+
+# Keep downloaded archives after installation
+always_keep_download = false
+
+# Keep installation files on failure for debugging
+always_keep_install = false
+
+# How frequently to check for plugin updates
+plugin_autoupdate_last_check_duration = "1 week"
+
+# Configure parallel installations
+jobs = 4
+
+# Verbose output during installations
+verbose = false
+
+# Ensure .tool-versions compatibility with asdf
+asdf_compat = false
+
+# Experimental features
+experimental = false
+
+# Log level (error, warn, info, debug, trace)
+log_level = "info"
+
+[tools]
+node = "lts"
+python = "3.14"
+go = "1.26"
