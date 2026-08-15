@@ -9,3 +9,6 @@ local.*
 .zcomp*
 .zsh_sessions
 
+
+### Claude Code（グローバルignoreの .claude/ を打ち消す） ###
+!packages/claude/.claude/
