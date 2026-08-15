@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# 名前付きウィンドウを行き来する。無ければ作る。
+#
+#   tmux-window-toggle <名前> [起動コマンド]
+#
+# 既にそのウィンドウにいる時は直前のウィンドウへ戻るので、同じキーで往復できる。
+# 起動コマンドを省くとシェルが開く（あとから何を走らせてもよい場所になる）。
+#
+# ポップアップにしないのは、閉じても中身を残したいため。ウィンドウなら
+# セッションの中で生き続け、入れ子のtmuxにもならないので prefix が素直に効く。
+set -eu
+
+name=${1:?usage: tmux-window-toggle <name> [command]}
+shift || true
+
+if [ "$(tmux display -p '#{window_name}')" = "$name" ]; then
+  tmux last-window
+  exit 0
+fi
+
+# 同名のウィンドウは現在のセッション内だけを探す。
+# プロジェクトごとにセッションを分けているため、別プロジェクトへは飛ばさない
+tmux select-window -t "$name" 2>/dev/null && exit 0
+
+tmux new-window -n "$name" -c "#{pane_current_path}" "$@"
