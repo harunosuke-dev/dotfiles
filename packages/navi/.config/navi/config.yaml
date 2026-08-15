@@ -1,0 +1,37 @@
+# THIS IS EXPERIMENTAL
+# the config file schema may change at any time
+
+style:
+  tag:
+    color: cyan # text color. possible values: https://bit.ly/3gloNNI
+    width_percentage: 10 # column width relative to the terminal window
+    min_width: 20 # minimum column width as number of characters
+  # naviは各列を「端末幅 × width_percentage + 余白2桁」に固定幅で詰める。
+  # タグ列20桁とfzfのポインタ2桁を差し引いた残りを説明とコマンドで分けるため、
+  # 42%が上限（43%にすると176桁のウィンドウで折り返す）
+  comment:
+    color: blue
+    width_percentage: 42
+    min_width: 30
+  snippet:
+    color: white
+    width_percentage: 42
+    min_width: 30
+
+finder:
+  command: fzf # equivalent to the --finder option
+  # navi自身の引数の後ろに追記されるため、fzfの後勝ちルールでこちらが優先される。
+  # --with-nth: 既定は「タグ 説明 コマンド」。タグを末尾に回して説明から読めるようにする
+  # --tmux: tmux内では全画面ポップアップで開く（tmux外では無視される）
+  overrides: "--with-nth 2,3,1 --tmux 100%,100%"
+  overrides_var: "--tmux 100%,100%" # 変数の選択画面も同じ見え方に揃える
+
+# cheatsはnaviの既定パス（$XDG_DATA_HOME/navi/cheats）をそのまま使う。
+# setup-links.shがディレクトリを先に作り、foldingを防いでいる。
+
+# search:
+# tags: git,!checkout # equivalent to the --tag-rules option
+
+shell:
+  command: zsh # shell used for shell out. possible values: bash, zsh, dash, ...
+  # finder_command: bash # similar, but for fzf's internals
