@@ -16,7 +16,7 @@ window-padding-balance = true
 # （lua/config/options.lua の transparent_background）
 # ここを薄くするとエディタの本文まで透ける。tmux のペイン背景も同様。
 background-opacity = 0.85
-background-blur = 80
+background-blur = 50
 
 # ─── カーソル ────────────────────────────────────────────────
 cursor-style = bar
