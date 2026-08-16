@@ -23,8 +23,8 @@ finder:
   # navi自身の引数の後ろに追記されるため、fzfの後勝ちルールでこちらが優先される。
   # --with-nth: 既定は「タグ 説明 コマンド」。タグを末尾に回して説明から読めるようにする
   # --tmux: tmux内では全画面ポップアップで開く（tmux外では無視される）
-  overrides: "--with-nth 2,3,1 --tmux 100%,100%"
-  overrides_var: "--tmux 100%,100%" # 変数の選択画面も同じ見え方に揃える
+  overrides: "--with-nth 2,3,1 --tmux 90%,90%"
+  overrides_var: "--tmux 90%,90%" # 変数の選択画面も同じ見え方に揃える
 
 # cheatsはnaviの既定パス（$XDG_DATA_HOME/navi/cheats）をそのまま使う。
 # setup-links.shがディレクトリを先に作り、foldingを防いでいる。
