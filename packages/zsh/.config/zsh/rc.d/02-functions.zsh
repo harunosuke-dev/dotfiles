@@ -133,11 +133,18 @@ mkcd() {
 
 ### fzf-enhanced navigation ###
 
+# Ctrl+Z から呼ぶウィジェットだが、fz と打っても使える。
+# $WIDGET は ZLE がウィジェットを実行している間だけ設定される。
+# 見ないと zle の呼び出しが「widgets can only be called when ZLE is active」で落ちる
 fz() {
     # Smart directory jump using zoxide (Ctrl+Z)
     if ! command -v zoxide >/dev/null 2>&1; then
-        # ウィジェットの中では echo が行を割り込ませて表示を崩す。zle -M を使う
-        zle -M "zoxide not available"
+        # ウィジェットの中では echo が行を割り込ませて表示を崩す
+        if [[ -n "${WIDGET-}" ]]; then
+            zle -M "zoxide not available"
+        else
+            print -u2 "zoxide not available"
+        fi
         return 1
     fi
 
@@ -146,10 +153,14 @@ fz() {
         $(__fzfcmd) --preview "echo {} | xargs eza \
         --color=always -h --long --icons --classify --git --no-permissions --no-user --no-filesize --git-ignore --sort modified --reverse --tree --level 4")
     if [ -n "$res" ]; then
-        BUFFER+="cd $res"
-        zle accept-line
+        if [[ -n "${WIDGET-}" ]]; then
+            BUFFER+="cd $res"
+            zle accept-line
+        else
+            builtin cd "$res"
+        fi
     else
-        zle reset-prompt
+        [[ -n "${WIDGET-}" ]] && zle reset-prompt
         return 1
     fi
 }
