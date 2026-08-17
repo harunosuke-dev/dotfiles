@@ -131,12 +131,20 @@ format_directories_with_sessions() {
     done
 }
 
+# 見た目は呼ばれ方で変える。
+# tmux の中では tmux-popup が用意した 90% の popup を目一杯使う。
+# tmux の外（zsh のウィジェット）では画面を占有せず、他のウィジェットと揃える
+if [ -n "${TMUX-}" ]; then
+    fzf_size=(--height=100% --border)
+else
+    fzf_size=(--height='~60%' --min-height=10 --border=none --info=inline)
+fi
+
 # ディレクトリ選択
 selected=$(format_directories_with_sessions |
     fzf \
-        --height=100% \
+        "${fzf_size[@]}" \
         --layout=reverse \
-        --border \
         --prompt="Create/switch to session: " \
         --header="Select directory for tmux session (󰄲=active 󰄱=new)" \
         --preview='

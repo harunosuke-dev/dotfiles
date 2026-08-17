@@ -97,7 +97,7 @@ else
         '
 EOF
     ) \
-                --height 100% --layout=reverse --border --ansi \
+                --height '~60%' --min-height 10 --layout=reverse --border=none --info=inline --ansi \
                 $__FZF_COLORS \
                 --preview-window 'right,50%,nowrap' \
                 --header 'Ctrl-\: Toggle Preview | Ctrl-U/D: Page Up/Down' \

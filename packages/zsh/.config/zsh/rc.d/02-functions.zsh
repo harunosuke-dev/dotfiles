@@ -223,9 +223,9 @@ tmux_choose_session() {
         return 1
     fi
 
+    # 大きさと枠は FZF_DEFAULT_OPTS に任せて他のウィジェットと揃える。
+    # セッション名はファイルではないのでプレビューだけ切る
     selected=$(print -r -- "$sessions" | command fzf \
-        --height='~40%' --min-height=6 \
-        --layout=reverse --border=none --info=inline \
         --no-preview --header='' \
         --prompt='Attach to session: ')
 
