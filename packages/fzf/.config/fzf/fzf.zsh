@@ -134,18 +134,3 @@ export FZF_CTRL_R_OPTS=$(
 --preview-window 'down,30%,hidden,wrap'
 EOF
 )
-
-local find_ignore="find ./ -type d \( -name '.git' -o -name 'node_modules' \) -prune -o -type"
-
-export FZF_ALT_C_COMMAND=$(
-    cat <<"EOF"
-( (type fd > /dev/null) &&
-  fd --type d \
-    --strip-cwd-prefix \
-    --hidden \
-    --exclude '{.git,node_modules}/**' ) \
-  || $find_ignore d -print 2> /dev/null
-EOF
-)
-export FZF_ALT_C_OPTS="--preview 'eza --tree -L 3 {} | head -200'"
-

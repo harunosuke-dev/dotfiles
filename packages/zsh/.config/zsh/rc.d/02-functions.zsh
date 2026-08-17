@@ -11,9 +11,7 @@
 #
 # - Ctrl+R : widget::history() - fzf の履歴検索
 # - Ctrl+Z : fz() - zoxide の履歴から cd（emacs キーマップで空き）
-# - Alt+C : fzf-cd-widget - カレント配下のディレクトリへ cd（fzf 同梱）
 # - Alt+F : tmux sessionizer（= tmux prefix + C-f, popup）
-# - Alt+G : widget::ghq::session() - ghq repository -> tmux session（popup）
 # - Alt+K : __navi_search - navi のチートシート（04-plugins.zsh）
 # - Alt+S : tmux session switch（= tmux prefix + C-s, popup）
 #
@@ -86,35 +84,11 @@ widget::history() {
 }
 
 
-### ghq Integration Widgets ###
+### ghq ###
 
-# ghq repository listing with tmux session status
-widget::ghq::source() {
-    local session color icon green="\e[32m" blue="\e[34m" reset="\e[m" checked="󰄲" unchecked="󰄱"
-    local sessions=($(tmux list-sessions -F "#S" 2>/dev/null))
-
-    ghq list | sort | while read -r repo; do
-        # Generate session name from last 2 directories (e.g., user/dotfiles)
-        session=$(echo "$repo" | awk -F'/' '{if(NF>=2) print $(NF-1)"/"$NF; else print $NF}' | sed 's/[:. ]/_/g')
-        color="$blue"
-        icon="$unchecked"
-        if (( ${+sessions[(r)$session]} )); then
-            color="$green"
-            icon="$checked"
-        fi
-        printf "$color$icon %s$reset\n" "$repo"
-    done
-}
-
-# ghq repository selection with fzf
-widget::ghq::select() {
-    local root="$(ghq root)"
-    widget::ghq::source | FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS-} --exit-0 --prompt 'Repository> ' \
-      --preview='fzf-preview-git ${(q)root}/{+2}' --preview-window='right:50%' " \
-      $(__fzfcmd) | cut -d' ' -f2-
-}
-
-# ghq のリポジトリへ cd するコマンド
+# ghq のリポジトリへ cd するコマンド。
+# セッションを張りたい相手は tmux-sessionizer の探索パスに入っているので、
+# こちらは cd だけを担う
 cdg() {
     local repo
     repo="$(ghq list | sort | command fzf \
@@ -125,33 +99,9 @@ cdg() {
     [[ -n "$repo" ]] && cd "$(ghq list --exact --full-path "$repo")"
 }
 
-# Create/switch tmux session for selected ghq repository
-widget::ghq::session() {
-    local selected="$(widget::ghq::select)"
-    if [ -z "$selected" ]; then
-        return
-    fi
-
-    local repo_dir="$(ghq list --exact --full-path "$selected")"
-    local session_name=$(echo "$selected" | awk -F'/' '{if(NF>=2) print $(NF-1)"/"$NF; else print $NF}' | sed 's/[:. ]/_/g')
-
-    if [ -z "$TMUX" ]; then
-        BUFFER="tmux new-session -A -s ${(q)session_name} -c ${(q)repo_dir}"
-        zle accept-line
-    elif [ "$(tmux display-message -p "#S")" = "$session_name" ] && [ "$PWD" != "$repo_dir" ]; then
-        BUFFER="cd ${(q)repo_dir}"
-        zle accept-line
-    else
-        tmux new-session -d -s "$session_name" -c "$repo_dir" 2>/dev/null
-        tmux switch-client -t "$session_name"
-    fi
-    zle -R -c # refresh screen
-}
-
 
 ### Widget Registration ###
 zle -N widget::history
-zle -N widget::ghq::session
 
 ### カーソルの形 ###
 _cursor_line() {

@@ -31,12 +31,10 @@
 #
 # fzf Integration (fzf-key-bindings.zsh):
 # - Ctrl+R : History search (custom widget / 02-functions.zsh)
-# - Alt+C  : Directory selection widget
 #
 # Custom (02-functions.zsh):
 # - Ctrl+Z : fz() - zoxide の履歴から cd
 # - Alt+F  : tmux sessionizer (= tmux prefix + C-f)
-# - Alt+G  : ghq repository -> tmux session
 # - Alt+S  : tmux session switch (= tmux prefix + C-s)
 # - Alt+K  : navi のチートシート（04-plugins.zsh）
 # - cdg    : ghq repository -> cd（コマンド。インラインの fzf）
@@ -149,7 +147,6 @@ bindkey -e
 
 # Essential key bindings (functions defined in 02-functions.zsh)
 bindkey "^R" widget::history            # C-r
-bindkey "^[g" widget::ghq::session      # Alt-g: ghq のリポジトリで tmux セッション
 
 # プロンプトを vim で編集する。EDITORはnvimのままなので、ここでだけ差し替える
 autoload -Uz edit-command-line
