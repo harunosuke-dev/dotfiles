@@ -80,7 +80,7 @@ widget::history() {
         BUFFER="$selected"
         CURSOR=$#BUFFER
     fi
-    zle -R -c # refresh screen
+    zle reset-prompt
 }
 
 
@@ -129,7 +129,8 @@ mkcd() {
 fz() {
     # Smart directory jump using zoxide (Ctrl+Z)
     if ! command -v zoxide >/dev/null 2>&1; then
-        echo "zoxide not available"
+        # ウィジェットの中では echo が行を割り込ませて表示を崩す。zle -M を使う
+        zle -M "zoxide not available"
         return 1
     fi
 
@@ -141,6 +142,7 @@ fz() {
         BUFFER+="cd $res"
         zle accept-line
     else
+        zle reset-prompt
         return 1
     fi
 }
