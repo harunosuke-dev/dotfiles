@@ -14,8 +14,8 @@
 # 6. Local Configuration (user customizations)
 #
 # KEYBINDING REFERENCE:
-# emacs キーマップ（bindkey -e）。自作のウィジェットは Alt へ寄せ、制御キーは
-# emacs 本来の編集キーと、fzf 由来で他所でも通じる3つだけに絞ってある。
+# emacs キーマップ（bindkey -e）。自作のウィジェットは Ctrl に置き、tmux 側と
+# 同じ文字を使う。emacs 本来の編集キーは明け渡さない。
 #
 # Basic Navigation & Editing（emacs の既定）:
 # - Ctrl+A / Ctrl+E : 行頭 / 行末
@@ -34,8 +34,8 @@
 #
 # Custom (02-functions.zsh):
 # - Ctrl+Z : fz() - zoxide の履歴から cd
-# - Alt+F  : tmux sessionizer (= tmux prefix + C-f)
-# - Alt+S  : tmux session switch (= tmux prefix + C-s)
+# - Ctrl+O : tmux sessionizer (= tmux prefix + C-o)
+# - Ctrl+S : tmux session switch (= tmux prefix + C-s)
 # - Alt+K  : navi のチートシート（04-plugins.zsh）
 # - cdg    : ghq repository -> cd（コマンド。インラインの fzf）
 #

@@ -6,17 +6,21 @@
 # Functions are organized by category for better maintainability.
 #
 # KEYBINDINGS SUMMARY:
-# 制御キーは fzf 由来の業界標準と、emacs キーマップで空いているものだけ。
-# 自作のウィジェットは Alt へ寄せてある。
+# tmux と同じ文字が同じ機能を指すように揃えてある。tmux は prefix + Ctrl+英字、
+# zsh は Ctrl+英字だけ。Alt は skhd が OS 全体で横取りするので使わない。
 #
 # - Ctrl+R : widget::history() - fzf の履歴検索
 # - Ctrl+Z : fz() - zoxide の履歴から cd（emacs キーマップで空き）
-# - Alt+F : tmux sessionizer（= tmux prefix + C-f, popup）
+# - Ctrl+O : tmux sessionizer（= tmux prefix + C-o, popup）
+# - Ctrl+S : tmux session switch（= tmux prefix + C-s, popup）
 # - Alt+K : __navi_search - navi のチートシート（04-plugins.zsh）
-# - Alt+S : tmux session switch（= tmux prefix + C-s, popup）
 #
-# セッション削除は tmux の prefix + C-x のみ
-# 破壊的で頻度も低いため、zsh 側に1打鍵の入口は置かない
+# emacs の編集キーは明け渡さない。Ctrl+A/B/E/F/N/P/Y/K/W/U と、
+# プレフィックスの Ctrl+X はそのまま残す。
+# Ctrl+S は .zshrc の stty -ixon でフロー制御を切ってあるので使える。
+#
+# lazygit（prefix + C-g）とセッション削除（prefix + C-x）は tmux 側のみ。
+# 長く滞在するものと破壊的なものには、zsh 側に1打鍵の入口を置かない
 #
 # COMMANDS (not widgets):
 # - cdg : ghq repository -> cd (inline fzf)
@@ -200,7 +204,7 @@ cmaket() {
 # TMUX INTEGRATION - Session management
 #########################################################################
 
-# tmux.conf の prefix + C-f と同じもの（Ctrl+F / Alt+F）
+# tmux.conf の prefix + C-o と同じもの（Ctrl+O）
 tmux_sessionizer_popup() {
     if [[ -n "$TMUX" ]]; then
         ~/.local/bin/tmux-popup center ~/.local/bin/tmux-sessionizer-popup
@@ -212,9 +216,9 @@ tmux_sessionizer_popup() {
     zle reset-prompt
 }
 zle -N tmux_sessionizer_popup
-bindkey '^[f' tmux_sessionizer_popup
+bindkey '^O' tmux_sessionizer_popup
 
-# tmux.conf の prefix + C-s と同じセッション切替（Ctrl+S / Alt+S）
+# tmux.conf の prefix + C-s と同じセッション切替（Ctrl+S）
 tmux_choose_session() {
     if [[ -n "$TMUX" ]]; then
         ~/.local/bin/tmux-popup center ~/.local/bin/tmux-switch-session
@@ -243,7 +247,7 @@ tmux_choose_session() {
     zle reset-prompt
 }
 zle -N tmux_choose_session
-bindkey '^[s' tmux_choose_session
+bindkey '^S' tmux_choose_session
 
 
 #########################################################################
