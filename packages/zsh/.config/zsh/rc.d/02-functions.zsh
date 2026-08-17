@@ -36,6 +36,9 @@ _hist_secret_re='(--?(password|passwd|token|secret|api[-_]?key)|Bearer |PRIVATE 
 # precmd で終了ステータスを見て「成功したコマンドだけ」履歴に確定する。
 zshaddhistory() {
   local line="${1%%$'\n'}"
+  # 下の確定は print -sr で履歴へ直接積むため HIST_IGNORE_SPACE を通らない。
+  # 行頭アンカーの除外も素通りしてしまうので、空白始まりはここで落とす
+  [[ "$line" == [[:space:]]* ]] && return 1       # 先頭に空白がある行を除外
   [[ "$line" =~ $_hist_ignore_re ]] && return 1   # 名前で除外
   [[ "$line" =~ $_hist_secret_re ]] && return 1   # 秘密が混じりうる行を除外
 
