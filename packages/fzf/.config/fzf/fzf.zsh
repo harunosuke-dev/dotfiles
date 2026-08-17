@@ -142,6 +142,12 @@ _fzf_comprun() {
 }
 
 ### --- options --- ###
+# cd の ** 補完はプレビューを出さない。
+# 候補が全てディレクトリなので既定の bat は常に空欄になるうえ、
+# プレビューが幅を取るとパスの末尾が切れて選びにくい。
+# 中を見たければ選んだ後にもう一度 ** を打てばよい
+export FZF_COMPLETION_DIR_OPTS="--no-preview"
+
 export FZF_CTRL_R_OPTS=$(
     cat <<"EOF"
 --preview '
