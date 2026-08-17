@@ -155,7 +155,10 @@ bindkey '^Z' fz
 j() {
     # Fuzzy directory jump within git repository
     local root dir
-    root="$($(git rev-parse --show-cdup 2>/dev/null):-.)"
+    # --show-cdup はルートまでの相対パスを返し、ルート直下では空になる。
+    # zsh では ${$(cmd):-.} と書けないので2行に分ける
+    root="$(git rev-parse --show-cdup 2>/dev/null)"
+    root="${root:-.}"
     dir="$(fd --color=always --hidden --type=d . "$root" | fzf --select-1 --query="$*" --preview='fzf-preview-directory {}')"
     if [ -n "$dir" ]; then
         builtin cd "$dir"
