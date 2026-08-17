@@ -113,6 +113,24 @@ fzf() {
   command "${cmd[@]}" --preview-window 'hidden' "$@"
 }
 
+### --- トリガー補完（** <Tab>）が候補を集めるコマンド --- ###
+# fzf の補完はこの2つが定義されていれば最優先で使い、結果を標準入力へ流す。
+#
+# 定義しないと fzf 内蔵の walker（--walker-root で対象を指定する仕組み）に
+# 落ちるが、そちらは FZF_DEFAULT_COMMAND が設定されていると無視される。
+# その結果 cd ~/Repos/**<Tab> のように場所を指定しても、指定先ではなく
+# cwd のファイル一覧が出てしまう。
+#
+# walker はもう一つ、cd の補完で隠しディレクトリを出さない（dir,follow のみで
+# hidden が付かない）。~/.config へ飛べないので fd の --hidden で揃える。
+_fzf_compgen_path() {
+    fd --hidden --follow --exclude .git --exclude node_modules . "$1"
+}
+
+_fzf_compgen_dir() {
+    fd --type d --hidden --follow --exclude .git --exclude node_modules . "$1"
+}
+
 ### --- トリガー補完（** <Tab>）が使う起動口 --- ###
 _fzf_comprun() {
   shift
