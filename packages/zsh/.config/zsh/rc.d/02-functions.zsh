@@ -31,7 +31,7 @@
 
 # History filtering + skip failed commands
 # 名前で常に除外する汎用/破壊系コマンド（追加したい語はここに足す）
-_hist_ignore_re='^(z|which|history|jj?|lazygit|la|ll|ls|rm|rmdir|trash|pwd|clear|exit)($| )'
+_hist_ignore_re='^(z|which|type|whence|history|jj?|lazygit|la|ll|ls|rm|rmdir|trash|pwd|clear|exit)($| )'
 
 # HIST_IGNORE_SPACE（先頭にスペースを打つと記録されない）も有効にしてあるが、
 # あちらは打つ前に思い出す必要がある。こちらは忘れても効く。
