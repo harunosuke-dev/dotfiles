@@ -64,6 +64,9 @@ alias diffall='diffb --new-line-format="+%L" --old-line-format="-%L" --unchanged
 ### bat ###
 # テーマは指定しない。bat の設定ファイル（packages/bat）で全体を揃えてある
 alias cat='bat --paging=never'
+# man 経由なら MANPAGER（03-tools.zsh）が同じ整形をする。使うのは man 以外から
+# man 形式が来た時だけ。col -bx はボールドの重ね打ちを落とす（省くと化ける）
+#   curl -sL <url>/foo.1 | mandoc -T utf8 | col -bx | batman
 alias batman='bat --language=man --plain'
 
 ### CMake ###
