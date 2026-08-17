@@ -219,12 +219,18 @@ cmaket() {
 tmux_sessionizer_popup() {
     if [[ -n "$TMUX" ]]; then
         ~/.local/bin/tmux-popup center ~/.local/bin/tmux-sessionizer-popup
-    else
-        # tmux の外では popup を開けない。スクリプト自身が
-        # exec tmux new-session -A -D で attach するのでそのまま渡す
-        ~/.local/bin/tmux-sessionizer-popup
+        zle reset-prompt
+        return
     fi
-    zle reset-prompt
+
+    # tmux の外では popup を開けない。スクリプト末尾の
+    # exec tmux new-session -A -D を ZLE の中で走らせると
+    # 「open terminal failed: not a terminal」で attach に失敗するので、
+    # コマンドラインへ積んで通常の前景プロセスとして起動する
+    # 先頭の空白は zshaddhistory が見て履歴から落とす。
+    # 入った先が分かるわけでもないスクリプト名を残しても意味がない
+    BUFFER=" ~/.local/bin/tmux-sessionizer-popup"
+    zle accept-line
 }
 zle -N tmux_sessionizer_popup
 bindkey '^O' tmux_sessionizer_popup
@@ -251,7 +257,9 @@ tmux_choose_session() {
         --prompt='Attach to session: ')
 
     if [[ -n "$selected" ]]; then
-        BUFFER="tmux attach-session -t ${(q)selected}"
+        # 先頭の空白で履歴から落とす。attach-session は既存のセッションにしか
+        # 繋げないので、消えた後の名前が履歴に残っていても引き当てられない
+        BUFFER=" tmux attach-session -t ${(q)selected}"
         zle accept-line
         return
     fi
