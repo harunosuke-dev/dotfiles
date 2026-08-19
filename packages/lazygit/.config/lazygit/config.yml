@@ -71,14 +71,15 @@ customCommands:
       - type: "menu"
         title: "type を選択"
         options:
-          - { name: "feat:     新機能", value: "feat" }
-          - { name: "style:    見た目・整形", value: "style" }
-          - { name: "fix:      バグ修正", value: "fix" }
-          - { name: "refactor: リファクタ", value: "refactor" }
-          - { name: "chore:    雑務・設定など", value: "chore" }
+          - { name: "feat:     提供物の追加", value: "feat" }
+          - { name: "fix:      不具合修正", value: "fix" }
+          - { name: "ui:       デザインの追加・変更", value: "ui" }
+          - { name: "refactor: 内部整理", value: "refactor" }
           - { name: "docs:     ドキュメント", value: "docs" }
+          - { name: "style:    コード整形", value: "style" }
+          - { name: "chore:    上記以外", value: "chore" }
       - type: "input"
-        title: "scope（任意・空でOK 例: mdx, zsh）"
+        title: "scope（任意・決められた規約があればそれに準拠）"
       - type: "input"
         title: "件名"
         # 「type(scope): 」を最初から入れて、続けて件名を打つ。scopeが空なら括弧なし。
