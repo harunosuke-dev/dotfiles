@@ -339,10 +339,27 @@ augroup END
 
 """ ----- IME -----
 " 日本語のまま normal モードへ戻ると操作できないため、英字へ自動で切り替える。
-" 50ms 待つのは <C-o> 系の割り当て（<C-a> / 矢印 / <S-Tab>）への対策
-" これらでも InsertLeave は発火するので、直後に InsertEnter が来たら取り消す
+" 発火点は nvim 側（lua/config/autocmds.lua）と揃えてある。
+"
+"   InsertLeave  挿入モードを抜けた時。IME で変換中に <Esc> を押した場合、
+"                1回目は IME が変換の取り消しに使って vim に届かないため、
+"                2回目で挿入モードを抜けてここが走る
+"   CmdlineLeave コマンドラインを抜けた時
+"   FocusGained  tmux でペインを切り替えて vim に戻ってきた時
+"                （tmux.conf の focus-events on が前提）
+"   VimEnter     起動直後。git のコミットエディタとして開いた時に効く
+"
+" InsertLeave だけ 50ms 待つのは <C-o> 系の割り当て（<C-a> / 矢印 / <S-Tab>）への
+" 対策。これらでも InsertLeave は発火するので、直後に InsertEnter が来たら取り消す。
+"
+" 逆方向（英字 → 日本語）は行わない。macism が日本語への切り替えを受け付けず、
+" 指定してもエラーを返さないまま無視されるため。日本語を書く時は手動で切り替える
 if has('mac') && executable('macism')
     let s:ime_timer = -1
+
+    function! s:ImeAsciiNow() abort
+        call job_start(['macism', 'com.apple.keylayout.ABC'])
+    endfunction
 
     function! s:ImeAsciiDefer() abort
         let s:ime_timer = timer_start(50, {-> job_start(['macism', 'com.apple.keylayout.ABC'])})
@@ -359,6 +376,7 @@ if has('mac') && executable('macism')
         autocmd!
         autocmd InsertLeave * call s:ImeAsciiDefer()
         autocmd InsertEnter * call s:ImeAsciiCancel()
+        autocmd CmdlineLeave,FocusGained,VimEnter * call s:ImeAsciiNow()
     augroup END
 endif
 
