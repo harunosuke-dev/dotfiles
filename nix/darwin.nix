@@ -68,7 +68,7 @@ in
       NSWindowResizeTime = 0.001;
       ApplePressAndHoldEnabled = false;
       KeyRepeat = 1;
-      InitialKeyRepeat = 14;
+      InitialKeyRepeat = 20;
       "com.apple.keyboard.fnState" = true;
       NSAutomaticSpellingCorrectionEnabled = false;
       NSAutomaticCapitalizationEnabled = false;
