@@ -84,5 +84,5 @@ customCommands:
         title: "件名"
         # 「type(scope): 」を最初から入れて、続けて件名を打つ。scopeが空なら括弧なし。
         initialValue: "{{index .PromptResponses 0}}{{if index .PromptResponses 1}}({{index .PromptResponses 1}}){{end}}: "
-    command: 'git commit -m "{{index .PromptResponses 2}}"'
+    command: "git commit -m {{index .PromptResponses 2 | quote}}"
     loadingText: "committing..."
