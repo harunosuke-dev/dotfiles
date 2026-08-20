@@ -117,6 +117,14 @@ setopt MAGIC_EQUAL_SUBST
 setopt PRINT_EIGHT_BIT
 setopt NO_FLOW_CONTROL
 
+# AI エージェントが起動したシェルは履歴を書き戻さない。
+# エージェントが検証のために対話シェルを立ち上げると、その操作まで SHARE_HISTORY で履歴ファイルへ流れ込むため。
+# 読み込みは残すので、この中でも Ctrl+R で自分の履歴を辿れる
+if [[ -n "$AI_AGENT" || -n "$CLAUDECODE" || -n "$CODEX_SANDBOX" ]]; then
+    unsetopt SHARE_HISTORY APPEND_HISTORY INC_APPEND_HISTORY
+    SAVEHIST=0
+fi
+
 # ==========================================
 #  Runtime Tools
 # ==========================================
