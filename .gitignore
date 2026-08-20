@@ -12,3 +12,5 @@ local.*
 
 ### Claude Code（グローバルignoreの .claude/ を打ち消す） ###
 !packages/claude/.claude/
+# settings.json は Claude Code 自身が書き換えるうえ、絶対パスや別リポジトリ名まで書き込むので追跡しない
+packages/claude/.claude/settings.json
