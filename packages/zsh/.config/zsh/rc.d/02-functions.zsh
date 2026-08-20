@@ -76,10 +76,14 @@ zle -N clear-screen clear-screen-and-update-prompt
 
 # History search widget using fzf
 # NOTE: 番号は !13 で再実行できる（ただしシェルごとのイベント番号）
+#
+# 番号の直後に付く * は、他のシェルから取り込まれた履歴の印（SHARE_HISTORY）。
+# awk で番号を拾う時に落とさないと、この行だけ整形されずに素通りして
+# 「[840*]   840* コマンド」のまま BUFFER へ入ってしまう
 widget::history() {
     setopt localoptions noglobsubst noposixbuiltins pipefail no_aliases 2> /dev/null
     local selected=( "$(history -r 1 \
-        | awk '{ n = $1; sub(/^ *[0-9]+ +/, ""); printf "[%s] %s\n", n, $0 }' \
+        | awk '{ n = $1; sub(/\*$/, "", n); sub(/^ *[0-9]+\*? +/, ""); printf "[%s] %s\n", n, $0 }' \
         | FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS-} --scheme=history ${FZF_CTRL_R_OPTS-} \
         --prompt 'History> ' --exit-0 --nth=2.. --query '$LBUFFER'" $(__fzfcmd) \
         | sed 's/^\[[0-9]*\] //' | sed 's/\\n/\n/g')" )
