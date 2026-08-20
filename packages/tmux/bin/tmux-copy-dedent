@@ -1,0 +1,30 @@
+#!/bin/sh
+# コピーした内容から、全行に共通する字下げを取り除くフィルタ。
+#
+#   tmux-copy-dedent < 入力 > 出力
+#
+# コピーモードの V（select-line）や複数行選択は必ず行頭から取るため、字下げされた行をコピーすると先頭に空白が付く。
+# ただし全行の先頭空白を無条件に削るとコードの相対的なインデントが壊れるので、全行に共通する最小の字下げだけを落とす。
+# 1行だけなら結果として先頭空白が全部消える。
+#
+# 最終行に改行を足さないのも意図的。
+# tmux の select-line は行末の改行まで選択に含めるので、素通しするとシェルへ貼った瞬間に実行されてしまう。
+
+exec awk '
+BEGIN { indent = -1 }
+{
+    line[NR] = $0
+    # 空行は共通の字下げを狭めてしまうので数えない
+    if (match($0, /[^ \t]/)) {
+        width = RSTART - 1
+        if (indent < 0 || width < indent) indent = width
+    }
+}
+END {
+    if (indent < 0) indent = 0
+    for (i = 1; i <= NR; i++) {
+        text = substr(line[i], indent + 1)
+        if (i < NR) print text; else printf "%s", text
+    }
+}
+'

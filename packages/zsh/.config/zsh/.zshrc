@@ -145,6 +145,11 @@ fi
 # emacs キーマップ - 明示が必須で、消すと vi モードに戻る
 bindkey -e
 
+# 貼り付けた直後の文字を反転表示しない。
+# zsh の既定は paste:standout だが、反転すると前景色と背景色が入れ替わって黒字になり読めなくなる。
+# 色は fast-syntax-highlighting が付けてくれるので、反転の合図は要らない
+zle_highlight=(paste:none)
+
 # Essential key bindings (functions defined in 02-functions.zsh)
 bindkey "^R" widget::history            # C-r
 
