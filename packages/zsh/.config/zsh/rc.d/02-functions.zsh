@@ -37,6 +37,23 @@ _hist_ignore_re='^(z|which|type|whence|history|jj?|lazygit|la|ll|ls|rm|rmdir|tra
 # あちらは打つ前に思い出す必要がある。こちらは忘れても効く。
 _hist_secret_re='(--?(password|passwd|token|secret|api[-_]?key)|Bearer |PRIVATE KEY|[A-Za-z_]*(KEY|TOKEN|SECRET|PASSWORD)=)'
 
+# 履歴へ 1 行積む。
+#
+# print -s は、渡された引数のひとつひとつを履歴上の 1 単語として積む。
+# コマンド行を丸ごと 1 つの引数として渡すと、行全体が 1 単語になってしまう。
+# すると !$ が行全体を返し、!^ !:2 !* と Esc .（insert-last-word）が壊れる。
+# (z) でシェルの語分割をして、単語ごとに引数として渡す。
+#
+# NOTE: (z) は改行を ; に変えるため、複数行のコマンドは 1 行に平坦化される。
+# それを避けて改行を含む行はそのまま積むので、その行に対する !$ と Esc . は行全体を返す。
+_hist_store() {
+  if [[ "$1" == *$'\n'* ]]; then
+    print -sr -- "$1"
+  else
+    print -sr -- ${(z)1}
+  fi
+}
+
 # precmd で終了ステータスを見て「成功したコマンドだけ」履歴に確定する。
 zshaddhistory() {
   local line="${1%%$'\n'}"
@@ -47,7 +64,7 @@ zshaddhistory() {
   [[ "$line" =~ $_hist_secret_re ]] && return 1   # 秘密が混じりうる行を除外
 
   if [[ "$line" == 'exec '* || "$line" == 'reload' ]]; then
-    print -sr -- "$line"
+    _hist_store "$line"
     return 1
   fi
   _hist_pending="$line"
@@ -56,7 +73,7 @@ zshaddhistory() {
 
 _hist_commit_on_success() {
   local st=$?
-  [[ -n "$_hist_pending" && $st -eq 0 ]] && print -sr -- "$_hist_pending"
+  [[ -n "$_hist_pending" && $st -eq 0 ]] && _hist_store "$_hist_pending"
   _hist_pending=""
   return $st
 }
