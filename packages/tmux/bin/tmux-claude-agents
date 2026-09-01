@@ -1,0 +1,179 @@
+#!/usr/bin/env bash
+# 走っている Claude Code をプロジェクト横断で一覧にして、選んだものへ飛ぶ。
+#
+#   tmux-claude-agents <session-name>            ピッカーを開く
+#   tmux-claude-agents --list <session-name>     行だけ出す（fzf の再読み込み用）
+#
+# セッション名を引数で受け取るのは、popup の中から #S を引くと元のセッションを
+# 取り違えることがあるため。バインド側で確定した値を渡してもらう。
+#
+# 並び順は「今いるセッションの Claude を先頭に固定し、あとは最後に開いた順」。
+# カーソルは2行目から始まるので、Enter だけで直前のプロジェクトへ戻れる。
+#
+# 状態は Claude 自身が報告する（claude agents --json）。pane_current_command は
+# 使えない。macOS では親シェルの名前が出るだけで、中で走る claude は見えない。
+set -uo pipefail
+
+self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+
+# --- 行の組み立て ------------------------------------------------------------
+#
+# 出力（タブ区切り）。先頭2列は並べ替え用で、fzf の --with-nth では隠す。
+#   1 pin           0 = 今いるセッション（先頭に固定）、1 = それ以外
+#   2 last_attached そのセッションを最後に開いた時刻（エポック秒。並べ替え用）
+#   3 pane_id       飛び先。プレビューの対象でもある
+#   4 pid           ctrl-x で落とす相手
+#   5 status        色付きの状態
+#   6 when          エージェントが最後に動いてからの経過
+#   7 loc           セッション:ウィンドウ.ペイン
+#   8 path          作業ディレクトリ
+#
+# 並べ替えは attach 時刻、表示は「最後に動いてから」で別々のものを使う。
+# 「どこへ戻るか」は行き来の順で決まるが、知りたいのは「どれだけ待たせているか」
+
+# そのセッションのトランスクリプトが最後に書かれた時刻（エポック秒）。
+# claude agents --json は startedAt しか持たず、終了時刻を出さないので代用する。
+# glob で探すのは、cwd からプロジェクト名への変換規則が Claude の内部仕様のため。
+# 見つからなければ空を返し、経過は '-' になる
+transcript_mtime() {
+  local f
+  for f in "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/projects/*/"$1".jsonl; do
+    [ -f "$f" ] || continue
+    stat -f %m "$f" 2>/dev/null || stat -c %Y "$f" 2>/dev/null
+    return
+  done
+}
+
+build_rows() {
+  local here=$1 agents rows mtimes
+  agents="$(claude agents --json 2>/dev/null)" || return 0
+  [ -n "$agents" ] || return 0
+
+  rows="$(printf '%s' "$agents" |
+    jq -r '.[] | select(.kind == "interactive") | [.pid, .status, .cwd, .sessionId] | @tsv' 2>/dev/null)"
+  [ -n "$rows" ] || return 0
+
+  # mtime は awk の外でしか取れないので、先にまとめて引く
+  mtimes="$(printf '%s\n' "$rows" | cut -f4 | while IFS= read -r sid; do
+    printf 'M\t%s\t%s\n' "$sid" "$(transcript_mtime "$sid")"
+  done)"
+
+  {
+    # pid -> tty
+    ps -Ao pid=,tty= 2>/dev/null | awk '{ print "P\t" $1 "\t" $2 }'
+    # tty -> ペインと場所
+    tmux list-panes -a -F $'T\t#{pane_tty}\t#{pane_id}\t#{session_name}\t#{session_name}:#{window_index}.#{pane_index}' 2>/dev/null
+    # セッション -> 最後に開いた時刻
+    tmux list-sessions -F $'S\t#{session_name}\t#{session_last_attached}' 2>/dev/null
+    # sessionId -> 最後に書いた時刻
+    printf '%s\n' "$mtimes"
+    # 走っている Claude
+    printf '%s\n' "$rows" | sed $'s/^/A\t/'
+  } | awk -F'\t' -v now="$(date +%s)" -v home="$HOME" -v here="$here" '
+    $1 == "P" { tty_of[$2] = $3; next }
+    $1 == "T" { sub(/^\/dev\//, "", $2); pane[$2] = $3; sess[$2] = $4; loc[$2] = $5; next }
+    $1 == "S" { attached[$2] = $3; next }
+    $1 == "M" { wrote[$2] = $3; next }
+    $1 == "A" {
+      tty = tty_of[$2]
+      if (tty == "" || !(tty in pane)) next   # tmux の外で動いている Claude は出さない
+
+      if      ($3 == "waiting") { dot = "\033[33m●\033[0m"; word = "waiting" }
+      else if ($3 == "idle")    { dot = "\033[32m●\033[0m"; word = "idle   " }
+      else if ($3 == "busy")    { dot = "\033[31m●\033[0m"; word = "working" }
+      else                      { dot = "\033[90m●\033[0m"; word = "  ?    " }
+
+      s = sess[tty]
+      pin = (s == here) ? 0 : 1
+      at = (s in attached) ? attached[s] : 0
+
+      # 経過は attach 時刻ではなくエージェントが最後に書いた時刻から数える。
+      # idle のものはそれが「終わった時刻」になる
+      w = wrote[$5] + 0
+      if (w == 0) when = "-"
+      else {
+        d = now - w
+        if      (d < 60)    when = int(d) "s"
+        else if (d < 3600)  when = int(d / 60) "m"
+        else if (d < 86400) when = int(d / 3600) "h"
+        else                when = int(d / 86400) "d"
+      }
+
+      path = $4
+      if (index(path, home) == 1) path = "~" substr(path, length(home) + 1)
+
+      # 桁を揃えてから色を付ける。printf はエスケープもバイト数に数えるため、
+      # 先に色を付けると %5s の幅がずれる
+      when = sprintf("%5s", when)
+
+      # 今いるセッションは飛び先ではない。文字を落として一覧から引っ込める。
+      # 状態の●だけ色を残す。飛ばないとしても、何をしているかは知りたい
+      if (pin == 0) {
+        word = "\033[90m" word "\033[0m"
+        when = "\033[90m" when "\033[0m"
+        loc[tty] = "\033[90m" loc[tty] "\033[0m"
+        path = "\033[90m" path "\033[0m"
+      }
+
+      printf "%d\t%d\t%s\t%s\t%s %s\t%s\t%s\t%s\n", pin, at, pane[tty], $2, dot, word, when, loc[tty], path
+    }
+  ' | sort -t$'\t' -k1,1n -k2,2nr
+  # 今いるセッションが先頭。残りは最後に開いた時刻の新しい順
+}
+
+if [ "${1:-}" = '--list' ]; then
+  build_rows "${2:-}"
+  exit 0
+fi
+
+# --- ピッカー ----------------------------------------------------------------
+here="${1:-$(tmux display-message -p '#S' 2>/dev/null)}"
+
+for tool in claude jq fzf; do
+  command -v "$tool" >/dev/null 2>&1 || {
+    echo "tmux-claude-agents: $tool が要ります" >&2
+    sleep 2
+    exit 1
+  }
+done
+
+rows="$(build_rows "$here")"
+if [ -z "$rows" ]; then
+  echo "tmux で動いている Claude はありません"
+  sleep 1.5
+  exit 0
+fi
+
+# シェル側の FZF_DEFAULT_OPTS を引き継がない。--with-nth などと衝突するため
+export FZF_DEFAULT_OPTS=''
+
+# 2行目から始める。1行目は今いるセッションなので、飛び先として選ぶ機会が
+# ほとんど無い。カーソルを乗せればプレビューは見られる。
+#
+# WARNING: start ではなく load に張る。start はリストの読み込み前に発火し、
+# その時点では行が無いので pos(2) が効かない
+selected="$(printf '%s\n' "$rows" | fzf \
+  --ansi \
+  --delimiter='\t' \
+  --with-nth=5,6,7,8 \
+  --layout=reverse \
+  --cycle \
+  --border \
+  --prompt='Claude> ' \
+  --header='enter: jump · ctrl-x: kill' \
+  --preview='tmux capture-pane -ept {3}' \
+  --preview-window='up,70%,follow' \
+  --bind="load:pos(2)" \
+  --bind="ctrl-x:execute-silent(kill {4})+reload(sleep 0.3; '$self' --list '$here')")"
+
+[ -n "$selected" ] || exit 0
+
+pane="$(printf '%s' "$selected" | cut -f3)"
+session="$(tmux display-message -p -t "$pane" '#{session_name}' 2>/dev/null)"
+[ -n "$session" ] || exit 0
+
+# popup の中からでも、切り替わるのは popup を開いたクライアント。
+# bin/tmux-switch-session と同じ呼び方
+tmux switch-client -t "$session" 2>/dev/null
+tmux select-window -t "$pane" 2>/dev/null
+tmux select-pane -t "$pane" 2>/dev/null
