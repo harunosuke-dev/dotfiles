@@ -172,8 +172,7 @@ pane="$(printf '%s' "$selected" | cut -f3)"
 session="$(tmux display-message -p -t "$pane" '#{session_name}' 2>/dev/null)"
 [ -n "$session" ] || exit 0
 
-# popup の中からでも、切り替わるのは popup を開いたクライアント。
-# bin/tmux-switch-session と同じ呼び方
+# popup の中からでも、切り替わるのは popup を開いたクライアント
 tmux switch-client -t "$session" 2>/dev/null
 tmux select-window -t "$pane" 2>/dev/null
 tmux select-pane -t "$pane" 2>/dev/null

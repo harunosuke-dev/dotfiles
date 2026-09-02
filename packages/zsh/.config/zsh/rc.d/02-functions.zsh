@@ -12,12 +12,10 @@
 # - Ctrl+R : widget::history() - fzf の履歴検索
 # - Ctrl+Z : fz() - zoxide の履歴から cd（emacs キーマップで空き）
 # - Ctrl+O : tmux sessionizer（= tmux prefix + C-o, popup）
-# - Ctrl+S : tmux session switch（= tmux prefix + C-s, popup）
 # - Alt+K : __navi_search - navi のチートシート（04-plugins.zsh）
 #
 # emacs の編集キーは明け渡さない。Ctrl+A/B/E/F/N/P/Y/K/W/U と、
 # プレフィックスの Ctrl+X はそのまま残す。
-# Ctrl+S は .zshrc の stty -ixon でフロー制御を切ってあるので使える。
 #
 # lazygit（prefix + C-g）とセッション削除（prefix + C-x）は tmux 側のみ。
 # 長く滞在するものと破壊的なものには、zsh 側に1打鍵の入口を置かない
@@ -255,40 +253,6 @@ tmux_sessionizer_popup() {
 }
 zle -N tmux_sessionizer_popup
 bindkey '^O' tmux_sessionizer_popup
-
-# tmux.conf の prefix + C-s と同じセッション切替（Ctrl+S）
-tmux_choose_session() {
-    if [[ -n "$TMUX" ]]; then
-        ~/.local/bin/tmux-popup center ~/.local/bin/tmux-switch-session
-        zle reset-prompt
-        return
-    fi
-
-    local sessions selected
-    sessions=$(tmux list-sessions -F '#{session_name}' 2>/dev/null | sort)
-    if [[ -z "$sessions" ]]; then
-        zle -M "No tmux sessions available"
-        return 1
-    fi
-
-    # 大きさと枠は FZF_DEFAULT_OPTS に任せて他のウィジェットと揃える。
-    # セッション名はファイルではないのでプレビューだけ切る
-    selected=$(print -r -- "$sessions" | command fzf \
-        --no-preview --header='' \
-        --prompt='Attach to session: ')
-
-    if [[ -n "$selected" ]]; then
-        # 先頭の空白で履歴から落とす。attach-session は既存のセッションにしか
-        # 繋げないので、消えた後の名前が履歴に残っていても引き当てられない
-        BUFFER=" tmux attach-session -t ${(q)selected}"
-        zle accept-line
-        return
-    fi
-    zle reset-prompt
-}
-zle -N tmux_choose_session
-bindkey '^S' tmux_choose_session
-
 
 #########################################################################
 # FILE MANAGEMENT
