@@ -79,6 +79,24 @@ is_exact_dir() {
     return 1
 }
 
+# ディレクトリからセッション名を作る。
+#
+#   TS_EXACT_PATHS のもの  basename（親は ~ になるので足しても意味が無い）
+#   それ以外                親/子（別リポジトリの同名ディレクトリを区別する）
+#
+# WARNING: 名前に . を残さない。tmux のターゲット指定では . が
+# 「ウィンドウ.ペイン」の区切りになり、含めると has-session も
+# switch-client も届かなくなる（一覧には出るのに参照できない）。
+# 親にも掛けるのは、検索パスに ~/.dotfiles や ~/.config があるため
+session_name_for() {
+    local dir="$1"
+    if is_exact_dir "$dir"; then
+        basename "$dir" | tr . _
+    else
+        printf '%s/%s' "$(basename "$(dirname "$dir")")" "$(basename "$dir")" | tr . _
+    fi
+}
+
 # 候補を並べる。順番がそのまま fzf の並びになる。
 #   1. TS_SEARCH_PATHS を書いた順に見て、各パスごとに
 #        - そのパス自体（TS_EXACT_PATHS にも書いてあれば）を先頭へ
@@ -125,14 +143,29 @@ format_directories_with_sessions() {
 
     list_candidate_dirs | awk '!seen[$0]++' | while read -r dir; do
         local session_name at
-        session_name=$(basename "$dir" | tr . _)
+        session_name=$(session_name_for "$dir")
         at=$(printf '%s\n' "$attached" | awk -F'\t' -v s="$session_name" '$1 == s { print ($2 == "" ? 0 : $2); found = 1 } END { if (!found) print "" }')
 
+        # 表示は ~ から。フルパスは端が切れて、どこにいるか読み取りにくい。
+        #
+        # WARNING: ${dir/#$HOME/~} は使わない。置換先の ~ がホームへ展開される。
+        # エスケープした \~ も駄目で、macOS の /bin/bash（3.2）では
+        # バックスラッシュがそのまま残る。case で削る方が版に依存しない
+        local shown
+        case "$dir" in
+            "$HOME"/*) shown="~/${dir#"$HOME"/}" ;;
+            "$HOME")   shown="~" ;;
+            *)         shown="$dir" ;;
+        esac
+
+        # 表示・実パス・セッション名をタブで分けて渡す。
+        # fzf には先頭だけ見せ、選択後とプレビューは実パスをそのまま使う。
+        # 以前はアイコンを sed で剥がしていたが、区切りを持たせる方が確実
         if [ -n "$at" ]; then
             # 起動中。rank=0 で先頭へ、その中は at の大きい順
-            printf '0\t%s\t%b%s %s%b\n' "$at" "$green" "$checked" "$dir" "$reset"
+            printf '0\t%s\t%b%s %s%b\t%s\t%s\n' "$at" "$green" "$checked" "$shown" "$reset" "$dir" "$session_name"
         else
-            printf '1\t0\t%b%s %s%b\n' "$blue" "$unchecked" "$dir" "$reset"
+            printf '1\t0\t%b%s %s%b\t%s\t%s\n' "$blue" "$unchecked" "$shown" "$reset" "$dir" "$session_name"
         fi
     done | sort -t$'\t' -k1,1n -k2,2nr -s | cut -f3-
 }
@@ -153,11 +186,13 @@ selected=$(format_directories_with_sessions |
         --layout=reverse \
         --prompt="Create/switch to session: " \
         --header="Select directory for tmux session (󰄲=active 󰄱=new)" \
+        --delimiter='\t' \
+        --with-nth=1 \
         --preview='
-            dir=$(echo {} | sed "s/^[^[:space:]]*[[:space:]]//" | xargs)
+            dir={2}
+            session_name={3}
             echo "Directory: $(basename "$dir")"
             echo "Path: $(echo "$dir" | sed "s|^$HOME|~|")"
-            session_name=$(basename "$dir" | tr . _)
             if tmux has-session -t "$session_name" 2>/dev/null; then
                 echo "Status: 󰄲 Session exists"
             else
@@ -175,17 +210,17 @@ selected=$(format_directories_with_sessions |
         --preview-window="right:40%" \
         --ansi)
 
-# 選択されたディレクトリパスを抽出（アイコンと色情報を除去）
+# 2列目に実パスをそのまま入れてあるので取り出すだけでよい
 if [ -n "$selected" ]; then
-    selected=$(echo "$selected" | sed 's/^[^[:space:]]*[[:space:]]//')
+    selected=$(printf '%s' "$selected" | cut -f2)
 fi
 
 if [ -z "$selected" ]; then
     exit 0
 fi
 
-# セッション名を生成（ディレクトリ名をベースに）
-session_name=$(basename "$selected" | tr . _)
+# セッション名を生成
+session_name=$(session_name_for "$selected")
 
 # tmux popup内で実行されているかチェック
 if [ -n "$TMUX" ]; then
