@@ -145,9 +145,15 @@ format_directories_with_sessions() {
     attached=$(tmux list-sessions -F '#{session_name}	#{session_last_attached}' 2>/dev/null)
 
     # 今いるセッション。popup の中から引いても、popup を開いたペインのものが返る
-    # （bin/tmux-kill-session や bin/tmux-switch-session と同じ引き方）
-    local here
-    here=$(tmux display-message -p '#S' 2>/dev/null)
+    # （bin/tmux-kill-session や bin/tmux-switch-session と同じ引き方）。
+    #
+    # WARNING: $TMUX を先に見る。display-message はセッションの外からでも
+    # 直近に使ったセッションを返すので、tmux の外（zsh のウィジェット）から
+    # 呼ぶと、居もしない場所が「今ここ」として沈む
+    local here=''
+    if [ -n "${TMUX-}" ]; then
+        here=$(tmux display-message -p '#S' 2>/dev/null)
+    fi
 
     list_candidate_dirs | awk '!seen[$0]++' | while read -r dir; do
         local session_name at line
@@ -201,20 +207,25 @@ format_directories_with_sessions() {
 # tmux の外（zsh のウィジェット）では画面を占有せず、他のウィジェットと揃える
 if [ -n "${TMUX-}" ]; then
     fzf_size=(--height=100% --border)
+    # 先頭は今いるセッション。飛び先ではないのでカーソルを2行目から始める。
+    # start ではなく load に張る。start はリストの読み込み前に発火して効かない
+    fzf_start=(--bind='load:pos(2)')
 else
     fzf_size=(--height='~60%' --min-height=10 --border=none --info=inline)
+    # tmux の外では「今いるセッション」が無いので、先頭から選ばせる
+    fzf_start=()
 fi
 
 # ディレクトリ選択
 selected=$(format_directories_with_sessions |
     fzf \
         "${fzf_size[@]}" \
+        ${fzf_start[@]+"${fzf_start[@]}"} \
         --layout=reverse \
         --prompt="Create/switch to session: " \
         --header="Select directory for tmux session (󰄲=active 󰄱=new)" \
         --delimiter='\t' \
         --with-nth=1 \
-        --bind='load:pos(2)' \
         --preview='
             dir={2}
             session_name={3}
