@@ -131,6 +131,18 @@ in
         };
       };
 
+      # 日本語入力（ことえり）の変換設定。
+      #
+      # ライブ変換は打ちながら勝手に確定していくため、思考を遮られる。
+      # 数字は半角でないとコマンドやコードに貼れない。
+      #
+      # NOTE: ことえりは起動時にこの値を読む。
+      # 反映には入力ソースの切り替えかログインし直しが要る。
+      "com.apple.inputmethod.Kotoeri" = {
+        JIMPrefLiveConversionKey = false;
+        JIMPrefFullWidthNumeralCharactersKey = false;
+      };
+
       "com.apple.desktopservices" = {
         DSDontWriteNetworkStores = true;
         DSDontWriteUSBStores = true;
