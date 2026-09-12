@@ -153,6 +153,14 @@ else
     exit 1
 fi
 
+# Trust third-party taps
+log "Trusting third-party formulae..."
+brew trust --formula \
+    koekeishiya/formulae/skhd \
+    koekeishiya/formulae/yabai \
+    laishulu/homebrew/macism \
+    || log_warn "brew trust failed (古い Homebrew では未対応。その場合は無視してよい)"
+
 # Create filtered Brewfile based on user choices
 filtered_brewfile="/tmp/Brewfile.filtered"
 create_filtered_brewfile "$source_brewfile" "$filtered_brewfile"
