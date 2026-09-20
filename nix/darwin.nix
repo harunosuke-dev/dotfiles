@@ -109,6 +109,16 @@ in
     };
 
     screencapture.disable-shadow = true;
+
+    # 🌐 キー単独で入力ソースを切り替える。
+    #
+    # fnState（F1〜F12 を標準のファンクションキーにする）は fn を押しながら
+    # 他のキーを押した時の話で、こちらとは別物。
+    #
+    # NOTE: この設定は再起動しないと反映されない。
+    # HIToolbox は起動時にしか読まない
+    hitoolbox.AppleFnUsageType = "Change Input Source";
+
     controlcenter.BatteryShowPercentage = true;
 
     CustomUserPreferences = {
@@ -119,12 +129,13 @@ in
         "com.apple.mouse.scaling" = 1.5;
       };
 
-      # 入力ソースの切り替えを Ctrl + Space に割り当てる。
+      # 入力ソースの切り替えは Ctrl + Space から 🌐 キーへ移した（AppleFnUsageType）。
+      # Ctrl + Space は OS が先に取るため、エディタの補完トリガーに届かなかった。
       #
       # parameters は (ASCII, キーコード, 修飾フラグ) の順
       # 32 = Space の ASCII、49 = Space のキーコード、262144 = 0x40000 = Control
       "com.apple.symbolichotkeys".AppleSymbolicHotKeys."60" = {
-        enabled = true;
+        enabled = false;
         value = {
           parameters = [ 32 49 262144 ];
           type = "standard";
