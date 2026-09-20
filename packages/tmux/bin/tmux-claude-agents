@@ -149,9 +149,13 @@ export FZF_DEFAULT_OPTS=''
 
 # 2行目から始める。1行目は今いるセッションなので、飛び先として選ぶ機会が
 # ほとんど無い。カーソルを乗せればプレビューは見られる。
+# 絞り込み中は先頭が今いるセッションとは限らないので、1行目へ戻す。
+# ctrl-x の reload でも load は再び発火するため、同じ判定を両方へ張る。
 #
 # WARNING: start ではなく load に張る。start はリストの読み込み前に発火し、
 # その時点では行が無いので pos(2) が効かない
+cursor_start='transform:[ -n {q} ] && echo first || echo "pos(2)"'
+
 selected="$(printf '%s\n' "$rows" | fzf \
   --ansi \
   --delimiter='\t' \
@@ -163,7 +167,8 @@ selected="$(printf '%s\n' "$rows" | fzf \
   --header='enter: jump · ctrl-x: kill' \
   --preview='tmux capture-pane -ept {3}' \
   --preview-window='up,70%,follow' \
-  --bind="load:pos(2)" \
+  --bind="load:$cursor_start" \
+  --bind="change:$cursor_start" \
   --bind="ctrl-x:execute-silent(kill {4})+reload(sleep 0.3; '$self' --list '$here')")"
 
 [ -n "$selected" ] || exit 0
