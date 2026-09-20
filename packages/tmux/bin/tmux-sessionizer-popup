@@ -208,8 +208,12 @@ format_directories_with_sessions() {
 if [ -n "${TMUX-}" ]; then
     fzf_size=(--height=100% --border)
     # 先頭は今いるセッション。飛び先ではないのでカーソルを2行目から始める。
-    # start ではなく load に張る。start はリストの読み込み前に発火して効かない
-    fzf_start=(--bind='load:pos(2)')
+    # start ではなく load に張る。start はリストの読み込み前に発火して効かない。
+    # 絞り込み中は先頭が今いるセッションとは限らないので、1行目へ戻す
+    fzf_start=(
+        --bind='load:pos(2)'
+        --bind='change:transform:[ -n {q} ] && echo first || echo "pos(2)"'
+    )
 else
     fzf_size=(--height='~60%' --min-height=10 --border=none --info=inline)
     # tmux の外では「今いるセッション」が無いので、先頭から選ばせる
