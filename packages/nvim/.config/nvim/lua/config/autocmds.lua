@@ -190,6 +190,134 @@ vim.api.nvim_create_autocmd('FileChangedShellPost', {
   end,
 })
 
+--- 差分の操作の説明を画面下端に出す。
+---
+--- winbar は incline（窓の右上に出すファイル名）と重なる。ステータスラインは
+--- lualine が globalstatus で1本にまとめており、窓ごとには描かれない。
+--- 仮想テキストは差分の行合わせをずらす。残るのはフロート
+local function open_diff_hint()
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.bo[buf].bufhidden = 'wipe'
+  -- do と dp は「今いる窓から見て」の向きなので、そのまま訳すと読み取りづらい。
+  -- 実際に使うのは左の do と右の dp の2つで、どちらもディスクの行がバッファに入る。
+  -- 1行に詰めると幅で切れるため、位置の説明と操作の説明で行を分ける
+  local lines = {
+    ' left = buffer   right = disk (never saved)',
+    ' disk into buffer: do on the left, dp on the right'
+      .. '   ]c [c = next / prev hunk   :w = save   :tabclose = close',
+  }
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+
+  local function position()
+    return {
+      relative = 'editor',
+      row = vim.o.lines - vim.o.cmdheight - (vim.o.laststatus > 0 and 1 or 0) - #lines,
+      col = 0,
+      width = vim.o.columns,
+      height = #lines,
+      style = 'minimal',
+      focusable = false,
+      zindex = 40,
+    }
+  end
+
+  local win = vim.api.nvim_open_win(buf, false, position())
+  vim.wo[win].winhighlight = 'NormalFloat:Comment'
+
+  vim.api.nvim_create_autocmd('VimResized', {
+    callback = function()
+      if not vim.api.nvim_win_is_valid(win) then
+        return true -- 消えていたらこの autocmd も畳む
+      end
+      vim.api.nvim_win_set_config(win, position())
+    end,
+  })
+
+  return win
+end
+
+--- 今のバッファとディスクの内容を並べて差分表示する。
+---
+--- :diffsplit % は使えない。同じファイルは既にバッファとして読まれており、
+--- 開いても同じ（変更済みの）バッファが出て差分にならない。
+--- ディスク側は空のバッファへ read ++edit で読み込む
+local function diff_with_disk()
+  local filetype = vim.bo.filetype
+  local buffer_win = vim.api.nvim_get_current_win()
+
+  -- splitright により、新しい窓は右に開く
+  vim.cmd('vertical new')
+  local disk_win = vim.api.nvim_get_current_win()
+  vim.bo.buftype = 'nofile'
+  vim.bo.bufhidden = 'wipe'
+  vim.bo.swapfile = false
+  vim.bo.filetype = filetype
+  vim.cmd('read ++edit #')
+  vim.cmd('0d_') -- read が残す先頭の空行を消す
+  vim.cmd('diffthis')
+
+  vim.api.nvim_set_current_win(buffer_win)
+  vim.cmd('diffthis')
+
+  -- 差分モードは foldlevel を 0 にするため、取り込んで一致した部分から
+  -- 順に折りたたまれていく。消えたように見えるので、この差分では畳まない
+  vim.wo[buffer_win].foldenable = false
+  vim.wo[disk_win].foldenable = false
+
+  local hint_win = open_diff_hint()
+
+  -- ディスク側を閉じたら説明も片付ける
+  vim.api.nvim_create_autocmd('WinClosed', {
+    pattern = tostring(disk_win),
+    once = true,
+    callback = function()
+      if vim.api.nvim_win_is_valid(hint_win) then
+        vim.api.nvim_win_close(hint_win, true)
+      end
+    end,
+  })
+end
+
+vim.api.nvim_create_user_command('DiffDisk', diff_with_disk, {
+  desc = '今のバッファとディスクの内容を差分表示する',
+})
+
+-- 未保存の変更があるところへ外部から書き込まれた時。
+--
+-- 素の確認（OK / Load File）は片方を捨てる二択で、統合する道が無い。
+-- バッファは保ったまま差分を開き、どちらの行を残すか手元で選べるようにする。
+-- 取り込んだら :w で確定し、差分のタブを閉じる。
+--
+-- 自動で開くのは今見ているバッファだけ。checktime は全バッファを見るため、
+-- まとめて開くと画面が埋まる。他は通知だけ出し、:DiffDisk で開く
+vim.api.nvim_create_autocmd('FileChangedShell', {
+  group = augroup('file_changed_diff'),
+  callback = function(args)
+    -- 読み直しも破棄もしない。確認のプロンプトも出さない
+    vim.v.fcs_choice = ''
+
+    local name = vim.fn.fnamemodify(args.file, ':~:.')
+    local current = args.buf == vim.api.nvim_get_current_buf()
+    -- 今見ているバッファなら差分がそのまま開くので、通知は事実だけでよい。
+    -- 表示時間は既定（6秒）に任せる。作業を終えた後まで残ると邪魔になる
+    vim.notify(
+      name .. ' が外部で変更された' .. (current and '' or '（:DiffDisk で差分表示）'),
+      vim.log.levels.WARN,
+      {
+        title = '未保存の変更あり',
+      }
+    )
+
+    if current then
+      -- 今のレイアウトを壊さないよう、別のタブへ開く
+      vim.schedule(function()
+        vim.cmd('tab split')
+        diff_with_disk()
+      end)
+    end
+  end,
+})
+
 -- 文章を書くファイルで、折り返しの見た目を整える。
 --
 -- 折り返し自体は全ファイルで有効（lua/config/options.lua）。
