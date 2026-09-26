@@ -58,9 +58,6 @@ return {
     end,
   },
 
-  -- TODO: 「今どの関数のどこにいるか」が足りないと感じたら nvim-treesitter-context を入れる
-  -- ジャンプは <leader>gs / <leader>gS / Trouble symbols で足りる
-
   -- コマンドライン・メッセージ・LSP のホバーをフロートウィンドウに置き換える。
   -- 画面下部の1行を占有していたコマンドラインが浮くため、その分だけ本文が広く使える
   {
