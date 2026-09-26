@@ -641,6 +641,14 @@ function M.match_statusline()
     vim.api.nvim_set_hl(0, group, { fg = current.fg, bg = normal.bg or 'NONE' })
   end
 
+  -- タブ行の文字色。今いるタブは本文と同じ明るさに太字、他は一段落とす。
+  -- 色ではなく明度で示す方針に合わせる。
+  -- lualine の tabs はこのグループ名を参照する（lua/plugins/ui.lua）ため、
+  -- 下の setup より先に定義する
+  local comment = vim.api.nvim_get_hl(0, { name = 'Comment', link = false })
+  vim.api.nvim_set_hl(0, 'LualineTabActive', { fg = normal.fg, bold = true })
+  vim.api.nvim_set_hl(0, 'LualineTabInactive', { fg = comment.fg })
+
   -- lualine は区画ごとに自前の背景を持つので、そちらも作り直す。
   -- 現在の設定を取り出してテーマだけ差し替える（lazy.nvim の opts は
   -- キャッシュされていて評価し直せない）

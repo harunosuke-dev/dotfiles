@@ -60,83 +60,6 @@ return {
 
   -- TODO: 「今どの関数のどこにいるか」が足りないと感じたら nvim-treesitter-context を入れる
   -- ジャンプは <leader>gs / <leader>gS / Trouble symbols で足りる
-  --
-  -- 画面最上部に、開いているバッファをタブとして並べる
-  -- Vim の本物のタブページ（:tabnew / gt）とは別のもので、並ぶのはバッファそのもの
-  {
-    'romgrk/barbar.nvim',
-    event = 'VeryLazy',
-    dependencies = {
-      'lewis6991/gitsigns.nvim', -- タブごとの差分の数（既定では出さない）
-      'nvim-tree/nvim-web-devicons',
-    },
-    init = function()
-      vim.g.barbar_auto_setup = false
-    end,
-    version = '^1.0.0',
-
-    config = function(_, opts)
-      require('barbar').setup(opts)
-
-      -- barbar は setup の最後で showtabline を 2 に上げる（barbar.lua:229）
-      -- これにより、次の2つが起きる：
-      --   1. 組み込みは選択中のタブを TabLineSel で塗る。iceberg のそれは
-      --      明るい面（#828597）なので、画面上端が一瞬白く光る
-      --   2. その間に見えているのは barbar のタブ行ではないため、
-      --      選択中のタブに左端のバーも太字も付かない
-      -- ここで戻し、出すかどうかは barbar の auto_hide に決めさせる
-      vim.o.showtabline = 0
-
-      -- WARNING: barbar は showtabline が 0 か 2 のどちらかである前提で書かれている。
-      -- render.lua:538-547 は「2 なら 0 へ」「0 なら 2 へ」しか持たない。
-      -- snacks の dashboard は開くときの値を保存し、閉じるときに書き戻す（dashboard.lua:1185）。
-      -- 書き戻されるのは barbar が触る前の既定値 1 である。
-      -- barbar はその 1 から復帰できず、引数なしで起動した回だけタブ行が出なくなる。
-      -- 1 を見つけたら 0 に直し、barbar に判断をやり直させる
-      vim.api.nvim_create_autocmd('OptionSet', {
-        group = vim.api.nvim_create_augroup('barbar-showtabline', { clear = true }),
-        pattern = 'showtabline',
-        callback = function()
-          if vim.o.showtabline == 1 then
-            vim.o.showtabline = 0
-            require('barbar.ui.render').update()
-          end
-        end,
-      })
-
-      require('config.highlights').apply()
-    end,
-    opts = {
-      -- バッファが1つしか無い間はタブ行を出さない
-      auto_hide = 1,
-      -- タブの増減をスライドさせない（oil を開いた時に一瞬タブが出るのを抑える）
-      animation = false,
-      -- タブの左右の余白設定（既定の 4 はファイル名どうしが離れすぎる）
-      maximum_padding = 1,
-      icons = {
-        buffer_index = true,
-        diagnostics = {
-          [vim.diagnostic.severity.ERROR] = { enabled = true, icon = ' ' },
-          [vim.diagnostic.severity.WARN] = { enabled = true, icon = ' ' },
-        },
-        -- ピン留めしたバッファは左端に集まり、閉じる操作から外れる
-        pinned = { button = '', filename = true },
-      },
-    },
-    keys = {
-      -- 標準の ]b / [b（:bnext / :bprevious）を置き換える
-      -- あちらはバッファ番号の順で動くため、並べ替えた後のタブの並びとずれる
-      { ']b', '<cmd>BufferNext<CR>', desc = 'Next buffer' },
-      { '[b', '<cmd>BufferPrevious<CR>', desc = 'Prev buffer' },
-      -- :bdelete と違い、そのバッファを映していた窓の分割を保ったまま閉じる
-      { '<leader>bd', '<cmd>BufferClose<CR>', desc = '[B]uffer [D]elete' },
-      { '<leader>bo', '<cmd>BufferCloseAllButCurrentOrPinned<CR>', desc = '[B]uffer [O]nly : close the others' },
-      { '<leader>bp', '<cmd>BufferPick<CR>', desc = '[B]uffer [P]ick : jump by letter' },
-      { '<leader>bP', '<cmd>BufferPin<CR>', desc = '[B]uffer [P]in : keep it on the left' },
-      { '<leader>b>', '<cmd>BufferMoveNext<CR>', desc = '[B]uffer move it right' },
-      { '<leader>b<', '<cmd>BufferMovePrevious<CR>', desc = '[B]uffer move it left' },
-    },
-  },
 
   -- コマンドライン・メッセージ・LSP のホバーをフロートウィンドウに置き換える。
   -- 画面下部の1行を占有していたコマンドラインが浮くため、その分だけ本文が広く使える
@@ -260,9 +183,43 @@ return {
           -- カラースキームを切り替えた時も、同じ関数で作り直す
           theme = require('config.highlights').lualine_theme(),
           globalstatus = true, -- 分割しても画面下に1本だけ
+          -- タブが1つの間はタブ行を出さない（showtabline を 1 にする）
+          always_show_tabline = false,
           icons_enabled = true,
           component_separators = { left = '', right = '' },
           section_separators = { left = '', right = '' },
+        },
+        -- 画面最上部にタブページを並べる。バッファではなく :tabnew / gt のタブ。
+        -- mode = 2 は「番号 + 名前」。path = 0 でファイル名だけにする。
+        --
+        -- max_length の既定（0）は画面幅の3分の1で、3枚目あたりから
+        -- 省略記号に潰れる。ここは1行まるごと使えるので画面幅を渡す
+        tabline = {
+          lualine_a = {
+            {
+              'tabs',
+              mode = 2,
+              path = 0,
+              max_length = function()
+                return vim.o.columns
+              end,
+              -- 今いるタブと他のタブを明度と太字で分ける。
+              -- 色はテーマに追従させたいので、lua/config/highlights.lua が
+              -- 定義するグループを名前で指す
+              tabs_color = {
+                active = 'LualineTabActive',
+                inactive = 'LualineTabInactive',
+              },
+              -- タブの区切り。lualine の separator は今いるタブの両隣だけ
+              -- section_separators 側に回るため、位置によって出たり消えたりする
+              -- （tabs/tab.lua の separator_before）。名前の頭に付けて揃える
+              fmt = function(name, tab)
+                return tab.last and name or name .. ' │'
+              end,
+              -- 区切り線を名前の末尾に付けているので、右の余白は要らない
+              padding = { left = 1, right = 0 },
+            },
+          },
         },
         sections = {
           lualine_a = { 'mode' },

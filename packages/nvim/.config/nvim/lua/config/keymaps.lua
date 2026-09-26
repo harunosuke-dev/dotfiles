@@ -53,10 +53,22 @@ map('n', '<leader>wz', function()
 end, { desc = '[W]indow [Z]oom : toggle maximize' })
 -- 閉じる・サイズ変更は Ctrl+w q / Ctrl+w o / Ctrl+w = などに揃っている
 
--- バッファ操作は barbar が持つ（lua/plugins/ui.lua）。
--- 移動は標準どおり ]b / [b だが、タブの並び順で動くよう barbar 側へ差し替えてある。
+-- バッファ操作。画面上端に並ぶのはタブページなので、バッファは一覧に出ない。
+-- 行き来は ]b / [b、選ぶなら <Space>fb。
+--
+-- 閉じる操作は snacks に任せる。:bdelete はそのバッファを映していた窓を
+-- 別のバッファに差し替えるだけで、分割の形が崩れることがある。
+--
 -- H / L に割り当てる設定は広く見かけるが、素の Vim では「画面の最上行 /
 -- 最下行へ」という毎日使う移動キーで、潰すと素の環境で戸惑う
+map('n', ']b', '<cmd>bnext<CR>', { desc = 'Next buffer' })
+map('n', '[b', '<cmd>bprevious<CR>', { desc = 'Prev buffer' })
+map('n', '<leader>bd', function()
+  require('snacks').bufdelete()
+end, { desc = '[B]uffer [D]elete' })
+map('n', '<leader>bo', function()
+  require('snacks').bufdelete.other()
+end, { desc = '[B]uffer [O]nly : close the others' })
 
 -- quickfix（検索結果などの一覧）の開閉。移動は標準の ]q / [q
 map('n', '<leader>uq', function()
