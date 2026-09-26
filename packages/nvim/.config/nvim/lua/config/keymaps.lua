@@ -35,6 +35,17 @@ map('n', '<C-l>', '<C-w>l', { desc = 'Move focus to the right window' })
 -- 一覧では機能ごとに1箇所へまとまる
 map('n', '<leader>ws', '<C-w>s', { desc = '[W]indow [S]plit horizontal' })
 map('n', '<leader>wv', '<C-w>v', { desc = '[W]indow split [V]ertical' })
+
+-- tmux と同じ指で分割する。prefix \ が左右、prefix - が上下
+-- （packages/tmux/.config/tmux/tmux.conf）。働きは Ctrl+w v / Ctrl+w s と同じで、
+-- 入口を増やすだけ。
+--
+-- Ctrl+w - は素では「高さを1行減らす」で、これは潰れる。サイズ調整は + < > = が残る。
+-- Ctrl+w | は「幅を最大化」なので触らない。左右は \ 側だけで揃える
+map('n', '<C-w>\\', '<C-w>v', { desc = 'Split vertical, like tmux' })
+map('n', '<C-w><C-\\>', '<C-w>v', { desc = 'Split vertical, like tmux' })
+map('n', '<C-w>-', '<C-w>s', { desc = 'Split horizontal, like tmux' })
+map('n', '<C-w><C-->', '<C-w>s', { desc = 'Split horizontal, like tmux' })
 -- 閉じる・サイズ変更は Ctrl+w q / Ctrl+w o / Ctrl+w = などに揃っている
 
 -- バッファ操作は barbar が持つ（lua/plugins/ui.lua）。
