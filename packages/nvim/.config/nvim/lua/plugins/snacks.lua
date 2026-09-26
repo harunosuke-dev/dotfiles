@@ -21,6 +21,7 @@ return {
       notifier = {
         enabled = true,
         margin = { top = 0, right = 1, bottom = 0 },
+        timeout = 6000, -- 規定は3秒
         -- 既定は画面幅の 40% まで。tmux でペインを分割していると
         -- それだけでは足りず、長い文が途中で切れる
         width = { min = 30, max = 0.6 },
