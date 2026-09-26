@@ -46,6 +46,11 @@ map('n', '<C-w>\\', '<C-w>v', { desc = 'Split vertical, like tmux' })
 map('n', '<C-w><C-\\>', '<C-w>v', { desc = 'Split vertical, like tmux' })
 map('n', '<C-w>-', '<C-w>s', { desc = 'Split horizontal, like tmux' })
 map('n', '<C-w><C-->', '<C-w>s', { desc = 'Split horizontal, like tmux' })
+
+-- 最大化のトグル。移動した先も最大化し続ける（lua/config/zoom.lua）
+map('n', '<leader>wz', function()
+  require('config.zoom').toggle()
+end, { desc = '[W]indow [Z]oom : toggle maximize' })
 -- 閉じる・サイズ変更は Ctrl+w q / Ctrl+w o / Ctrl+w = などに揃っている
 
 -- バッファ操作は barbar が持つ（lua/plugins/ui.lua）。
