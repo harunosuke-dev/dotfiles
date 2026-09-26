@@ -195,6 +195,11 @@ return {
         hover = { silent = true },
         progress = { enabled = true, view = 'mini' }, -- LSP の初期化進捗
       },
+      -- 右下に出る mini の表示時間。既定の2秒は読み切れないことがある。
+      -- 通知（右上、6秒）より短くしておき、軽い知らせとして扱う
+      views = {
+        mini = { timeout = 4000 },
+      },
       presets = {
         -- bottom_search は無効。/ による検索も : と同じくフロート表示にする
         long_message_to_split = true, -- 長いメッセージは分割ウィンドウへ逃がす
