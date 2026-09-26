@@ -359,6 +359,31 @@ vim.api.nvim_create_autocmd('BufWritePre', {
   end,
 })
 
+-- カーソル行の帯は、今いる窓だけに出す。
+--
+-- 分割すると全ての窓に帯が出て、どこにカーソルがあるかが一目で分からない。
+-- 帯は位置を示すためのものなので、読んでいる窓に1本だけあればよい。
+--
+-- WinLeave で消すのではなく、窓を移るたびにタブ内を一巡して当て直す。
+-- codediff の explorer のように、プラグインが後から cursorline を立て直す窓が
+-- あり、離れた時に一度消すだけでは戻ってしまう。
+--
+-- フロート窓（ピッカー・ホバー）は触らない。プラグイン側の指定を上書きしないため
+local function follow_cursorline()
+  local current = vim.api.nvim_get_current_win()
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_config(win).relative == '' then
+      -- 差分モードでは帯そのものを切っている（上の diff_window を参照）
+      vim.wo[win].cursorline = win == current and not vim.wo[win].diff
+    end
+  end
+end
+
+vim.api.nvim_create_autocmd({ 'WinEnter', 'WinNew', 'WinClosed', 'BufWinEnter', 'VimEnter' }, {
+  group = augroup('cursorline_focus'),
+  callback = vim.schedule_wrap(follow_cursorline),
+})
+
 -- 非アクティブなウィンドウを沈ませる。
 --
 -- 窓ごとのハイライト名前空間を当てて、その窓の色だけ暗くする。背景を敷いて
