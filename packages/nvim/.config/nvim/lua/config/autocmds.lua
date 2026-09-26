@@ -179,11 +179,14 @@ vim.api.nvim_create_autocmd('OptionSet', {
   end,
 })
 
--- 読み直した時に気づけるよう通知する。黙って中身が変わると混乱するため
+-- 読み直した時に気づけるよう通知する。黙って中身が変わると混乱するため。
+-- どのファイルかを出す。複数が同時に書き換わる場面があるため
 vim.api.nvim_create_autocmd('FileChangedShellPost', {
   group = augroup('checktime_notify'),
-  callback = function()
-    vim.notify('ファイルが外部で変更されたため読み直しました', vim.log.levels.WARN)
+  callback = function(args)
+    vim.notify(vim.fn.fnamemodify(args.file, ':~:.') .. ' を読み直しました', vim.log.levels.WARN, {
+      title = '外部で変更',
+    })
   end,
 })
 
