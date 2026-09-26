@@ -164,6 +164,20 @@ return {
       -- nvim-notify を要求するが、snacks は起動画面で既に入っているため
       -- プラグインを増やさずに済む。見逃しても <leader>nh で履歴を遡れる
       notify = { view = 'snacks' },
+      -- 警告レベルの通知も右上へ出す。
+      --
+      -- noice の既定ルートは { warning = true } を先に拾い、messages.view_warn
+      -- （ここでは mini）へ送る。notify.view より手前にあるため、
+      -- vim.notify(..., WARN) が右下に出てしまう。
+      -- ユーザ定義のルートは既定より先に評価されるので、ここで横取りする。
+      -- Vim 自身が出す警告メッセージは今までどおり mini のまま
+      routes = {
+        {
+          view = 'snacks',
+          filter = { event = 'notify' },
+          opts = { title = 'Notify' },
+        },
+      },
       lsp = {
         -- ホバーやシグネチャの Markdown を Treesitter で色付けする
         override = {
