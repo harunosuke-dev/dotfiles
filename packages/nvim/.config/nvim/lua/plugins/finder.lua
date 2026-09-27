@@ -158,10 +158,22 @@ local function scope_home()
   }
 end
 
---- ファイル名で探す
+--- ファイル名で探す。Alt-g で同じ範囲の grep へ移れる。
+--- 名前で見つからない時に、範囲を選び直さず中身の検索へ切り替えられる。
+--- ctrl-g は fzf-lua が grep 系で使っている（grep と live_grep の切り替え）ため避ける。
+--- ヘッダーに出すのは alt-i（.gitignore）と同じ流儀
 local function find_files(scope)
   return function()
-    require('fzf-lua').files(scope())
+    local opts = scope()
+    opts.actions = {
+      ['alt-g'] = {
+        fn = function()
+          require('fzf-lua').live_grep(scope())
+        end,
+        header = 'Grep instead',
+      },
+    }
+    require('fzf-lua').files(opts)
   end
 end
 
