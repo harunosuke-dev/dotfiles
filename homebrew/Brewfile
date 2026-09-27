@@ -65,6 +65,7 @@ cask "cleanshot"  # Screenshot and screen recording tool
 cask "discord"  # Voice and text communication for gaming
 # cask "dropbox"  # Cloud storage and file synchronization
 cask "font-hackgen-nerd"  # Japanese-capable patched font (Hack + GenJyuu Gothic)
+cask "font-maple-mono"  # Cursive italics for the terminal (see ghostty font-family-italic)
 cask "font-udev-gothic-nf"  # Japanese-capable patched font (JetBrains Mono + BIZ UDGothic)
 cask "ghostty"  # GPU-accelerated terminal with correct full-width glyph handling
 cask "google-chrome"  # Web browser by Google

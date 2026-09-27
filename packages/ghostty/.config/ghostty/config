@@ -2,6 +2,19 @@
 font-family = "UDEV Gothic 35NF"
 font-size = 15
 
+# 斜体だけ別のフォントにする。
+# UDEV Gothic の英字は JetBrains Mono なので、素の斜体は傾いているだけになる。
+# nvim はキーワードを斜体にしている（nvim の ITALIC_GROUPS）。
+# 字形そのものを変えると、本文との差がはっきりする。
+#
+# 日本語グリフは Maple Mono に無く、あれば UDEV Gothic へ落ちる。
+# 斜体の対象はキーワードだけなので、実際には英字しか通らない。
+#
+# 半角の字送りは UDEV Gothic 35NF が 0.599em、Maple Mono が 0.600em。
+# x ハイトとキャップハイトは 0.550 / 0.730 で一致する（実測）
+font-family-italic = "Maple Mono"
+font-family-bold-italic = "Maple Mono"
+
 # ─── ウィンドウ ──────────────────────────────────────────────
 # タイトルバー・枠・信号機ボタンを全て除去する
 # macOS の仕様でタブ機能も無効になる - 分割・タブは tmux が担う
