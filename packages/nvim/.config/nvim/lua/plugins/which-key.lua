@@ -41,6 +41,7 @@ return {
     -- 括弧の文字がそのままキーになるので、どの頭文字から来ているかが分かる。
     -- 語呂が成り立たない x（trouble の慣例）や ] [ は括弧を使わず平文にする
     spec = {
+      { '<leader><Tab>', group = 'Tab page' },
       { '<leader>b', group = '[B]uffer' },
       { '<leader>c', group = '[C]ode' },
       { '<leader>f', group = '[F]ind' },

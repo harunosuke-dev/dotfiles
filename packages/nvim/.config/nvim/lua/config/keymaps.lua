@@ -53,6 +53,16 @@ map('n', '<leader>wz', function()
 end, { desc = '[W]indow [Z]oom : toggle maximize' })
 -- 閉じる・サイズ変更は Ctrl+w q / Ctrl+w o / Ctrl+w = などに揃っている
 
+-- タブページの操作。窓やバッファほど頻度が高くないので、1文字のキーは使わず
+-- <Tab> の側へ置く。
+--
+-- 移動は入れない。素の gt / gT で足り、<C-w>gt / <C-w>gT も同じ働きを持つ。
+-- <leader><Tab>m は組み込みの <C-w>T の別名。あちらは Shift が要る
+map('n', '<leader><Tab><Tab>', '<cmd>tabnew<CR>', { desc = 'New tab page' })
+map('n', '<leader><Tab>d', '<cmd>tabclose<CR>', { desc = '[D]elete this tab page' })
+map('n', '<leader><Tab>o', '<cmd>tabonly<CR>', { desc = '[O]nly : close the other tab pages' })
+map('n', '<leader><Tab>m', '<C-w>T', { desc = '[M]ove this window to a new tab page' })
+
 -- バッファ操作。画面上端に並ぶのはタブページなので、バッファは一覧に出ない。
 -- 行き来は ]b / [b、選ぶなら <Space>fb。
 --
