@@ -125,13 +125,60 @@ local function installed_colorschemes()
   end, vim.fn.getcompletion('', 'color'))
 end
 
+--- 検索の範囲を表す。fzf-lua へそのまま渡すオプションを返す。
+--- files に rg_opts を、live_grep に fd_opts を渡しても無視されるので、
+--- 両方を持たせて1つの関数で済ませる
+
+--- 今いる場所（fzf-lua の既定）
+local function scope_cwd()
+  return {}
+end
+
+--- 今のバッファから見た git のルート。worktree や submodule の .git も拾う。
+--- リポジトリの外では今の場所のまま動かす
+local function scope_root()
+  local path = vim.api.nvim_buf_get_name(0)
+  local root = vim.fs.root(path ~= '' and path or vim.uv.cwd(), '.git')
+  if not root then
+    vim.notify('git リポジトリの外です。今の場所を検索します', vim.log.levels.WARN)
+  end
+  return {
+    cwd = root,
+    prompt = vim.fn.fnamemodify(root or vim.uv.cwd(), ':t') .. '❯ ',
+  }
+end
+
+--- ホーム以下
+local function scope_home()
+  return {
+    cwd = vim.env.HOME,
+    prompt = 'Home❯ ',
+    fd_opts = HOME_FD_OPTS,
+    rg_opts = HOME_RG_OPTS,
+  }
+end
+
+--- ファイル名で探す
+local function find_files(scope)
+  return function()
+    require('fzf-lua').files(scope())
+  end
+end
+
+--- 中身を検索する
+local function find_grep(scope)
+  return function()
+    require('fzf-lua').live_grep(scope())
+  end
+end
+
 return {
   'ibhagwan/fzf-lua',
   cmd = 'FzfLua',
   keys = {
     -- ファイル系
-    { '<leader>ff', '<cmd>FzfLua files<cr>', desc = '[F]ind [F]ile in this project' },
-    { '<leader>fg', '<cmd>FzfLua live_grep<cr>', desc = '[F]ind by [G]rep in this project' },
+    { '<leader>ff', find_files(scope_cwd), desc = '[F]ind [F]ile in this project' },
+    { '<leader>fg', find_grep(scope_cwd), desc = '[F]ind by [G]rep in this project' },
     { '<leader>fb', '<cmd>FzfLua buffers<cr>', desc = '[F]ind [B]uffer already open / <Space><Space>' },
     { '<leader>fr', '<cmd>FzfLua oldfiles<cr>', desc = '[F]ind [R]ecent across projects' },
 
@@ -179,28 +226,11 @@ return {
       end,
       desc = '[F]ind [P]roject : cd and browse',
     },
-    {
-      '<leader>fF',
-      function()
-        require('fzf-lua').files({
-          cwd = vim.env.HOME,
-          prompt = 'Home❯ ',
-          fd_opts = HOME_FD_OPTS,
-        })
-      end,
-      desc = '[F]ind [F]ile under home',
-    },
-    {
-      '<leader>fG',
-      function()
-        require('fzf-lua').live_grep({
-          cwd = vim.env.HOME,
-          prompt = 'Home❯ ',
-          rg_opts = HOME_RG_OPTS,
-        })
-      end,
-      desc = '[F]ind by [G]rep under home',
-    },
+    -- サブディレクトリで開いた時でも、プロジェクト全体を見る
+    { '<leader>fF', find_files(scope_root), desc = '[F]ind [F]ile in the git root' },
+    { '<leader>fG', find_grep(scope_root), desc = '[F]ind by [G]rep in the git root' },
+    -- ホーム全体。grep へは Alt-g で移る
+    { '<leader>fH', find_files(scope_home), desc = '[F]ind file under [H]ome' },
 
     -- カーソル下の単語をそのまま検索。調べ物の起点として使用頻度が高い
     { '<leader>fw', '<cmd>FzfLua grep_cword<cr>', desc = '[F]ind [W]ord under cursor in project' },
