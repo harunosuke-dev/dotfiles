@@ -47,10 +47,17 @@ map('n', '<C-w><C-\\>', '<C-w>v', { desc = 'Split vertical, like tmux' })
 map('n', '<C-w>-', '<C-w>s', { desc = 'Split horizontal, like tmux' })
 map('n', '<C-w><C-->', '<C-w>s', { desc = 'Split horizontal, like tmux' })
 
--- 最大化のトグル。移動した先も最大化し続ける（lua/config/zoom.lua）
-map('n', '<leader>wz', function()
+-- 最大化のトグル。移動した先も最大化し続ける（lua/config/zoom.lua）。
+--
+-- Ctrl+w z は素では「プレビュー窓を閉じる」。この設定では completeopt に
+-- preview が無く、:ptag や :pedit も使わないため出てこない。
+-- 閉じる手段としては :pclose が残る。tmux の prefix z と指を揃える方を取る
+local function zoom()
   require('config.zoom').toggle()
-end, { desc = '[W]indow [Z]oom : toggle maximize' })
+end
+
+map('n', '<leader>wz', zoom, { desc = '[W]indow [Z]oom : toggle maximize' })
+map('n', '<C-w>z', zoom, { desc = 'Zoom toggle, like tmux' })
 -- 閉じる・サイズ変更は Ctrl+w q / Ctrl+w o / Ctrl+w = などに揃っている
 
 -- タブページの操作。窓やバッファほど頻度が高くないので、1文字のキーは使わず
