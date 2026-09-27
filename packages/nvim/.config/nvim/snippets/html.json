@@ -1,0 +1,22 @@
+{
+  "HTML の雛形": {
+    "prefix": "!html",
+    "body": [
+      "<!doctype html>",
+      "<html lang=\"ja\">",
+      "  <head>",
+      "    <meta charset=\"UTF-8\" />",
+      "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />",
+      "    <link rel=\"stylesheet\" href=\"./style.css\" />",
+      "    <script type=\"module\" src=\"${2:./main.tsx}\"></script>",
+      "    <title>${1:title}</title>",
+      "  </head>",
+      "",
+      "  <body>",
+      "    $0",
+      "  </body>",
+      "</html>"
+    ],
+    "description": "<!doctype html> から </html> まで。style.css の <link> と main.tsx の <script> は使わなければ消す"
+  }
+}
