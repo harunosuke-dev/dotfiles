@@ -63,6 +63,12 @@ map('n', '<leader><Tab>d', '<cmd>tabclose<CR>', { desc = '[D]elete this tab page
 map('n', '<leader><Tab>o', '<cmd>tabonly<CR>', { desc = '[O]nly : close the other tab pages' })
 map('n', '<leader><Tab>m', '<C-w>T', { desc = '[M]ove this window to a new tab page' })
 
+-- タブの移動。端末が Ctrl+Shift を区別して送れる場合だけ届く。
+-- 送れない端末では Ctrl+h / Ctrl+l と同じ扱いになり、窓の移動が起きる。
+-- Neovim 側は別のキーとして持つので、上の窓の移動が壊れることはない
+map('n', '<C-S-h>', '<cmd>tabprevious<CR>', { desc = 'Prev tab page' })
+map('n', '<C-S-l>', '<cmd>tabnext<CR>', { desc = 'Next tab page' })
+
 -- バッファ操作。画面上端に並ぶのはタブページなので、バッファは一覧に出ない。
 -- 行き来は ]b / [b、選ぶなら <Space>fb。
 --
