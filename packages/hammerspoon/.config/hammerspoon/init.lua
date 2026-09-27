@@ -20,10 +20,12 @@ appWatcher = hs.application.watcher.new(function(_appName, eventType, _appObject
 end)
 appWatcher:start()
 
--- 右 cmd の単押しで英数とかなをトグルする。
+-- 右 cmd で英数とかなをトグルする。
 -- 外部キーボードには地球儀キーが無く、macOS 標準の ctrl + alt + space も押しづらいため。
--- 右 cmd は修飾キーとして使わないので、押した瞬間に切り替えてイベントを捨てる。
-local RIGHT_CMD = 0x36
+--
+-- 右 cmd は hidutil で F18 へ変更してある（nix/darwin.nix）。
+-- 修飾キーのまま残すと、右 cmd + space などの誤爆が起きる。
+-- ここでは変更後の F18 を受ける
 
 -- JIS キーボードの英数キーとかなキー。
 -- 入力ソースを TIS で直接指定するより、IME にキーを渡す方が切り替わりが速い。
@@ -40,19 +42,4 @@ local function toggleSource()
   end
 end
 
--- eventtap も watcher と同じくグローバルに保持する
-cmdTap = hs.eventtap.new({ hs.eventtap.event.types.flagsChanged }, function(event)
-  if event:getKeyCode() ~= RIGHT_CMD then
-    return false
-  end
-
-  -- 押した時だけ切り替える。離すまで待つと、その分だけ切り替えが遅れる。
-  -- 左 cmd を押している間は cmd フラグが落ちないため、離す時にも通るが実害はない
-  if event:getFlags().cmd then
-    toggleSource()
-  end
-
-  -- cmd としては流さない。単押しを取りこぼす経路をなくす
-  return true
-end)
-cmdTap:start()
+hs.hotkey.bind({}, "f18", toggleSource)

@@ -13,8 +13,18 @@ let
     # Caps LockをControlへ変更する。defaultsは次回ログイン用、hidutilは即時反映用。
     /usr/bin/defaults -currentHost write -g com.apple.keyboard.modifiermapping.0-0-0 -array \
       '{"HIDKeyboardModifierMappingDst"=30064771300;"HIDKeyboardModifierMappingSrc"=30064771129;}'
+
+    # キーの変更をまとめて指定する。hidutilは--setのたびに全体を置き換えるため、
+    # 1つだけ書くと他が消える。
+    #   0x700000039 -> 0x7000000E4  Caps LockをControlへ
+    #   0x7000000E7 -> 0x70000006D  右cmdをF18へ（入力ソースの切り替え専用キー）
+    #
+    # 右cmdを修飾キーのまま残すと、右cmd + spaceなどの誤爆が起きる。
+    # F18を受けて英数/かなを切り替えるのはHammerspoon側。
+    # System Settingsの修飾キー設定は修飾キー同士の入れ替えしか扱えないので、
+    # defaultsには書けない。ログイン時のこのエージェントで毎回かけ直す
     /usr/bin/hidutil property --set \
-      '{"UserKeyMapping":[{"HIDKeyboardModifierMappingSrc":0x700000039,"HIDKeyboardModifierMappingDst":0x7000000E4}]}' \
+      '{"UserKeyMapping":[{"HIDKeyboardModifierMappingSrc":0x700000039,"HIDKeyboardModifierMappingDst":0x7000000E4},{"HIDKeyboardModifierMappingSrc":0x7000000E7,"HIDKeyboardModifierMappingDst":0x70000006D}]}' \
       >/dev/null 2>&1 || true
 
     # Google Driveがマウント済みならその中へ、なければローカルへ保存する。
