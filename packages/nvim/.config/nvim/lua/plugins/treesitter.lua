@@ -8,7 +8,7 @@ local parsers = {
   'vim',
   'vimdoc',
   'query',
-  -- Next.js
+  -- Web Frontend: Next.js, Astro
   'javascript',
   'typescript',
   'tsx',
@@ -16,6 +16,7 @@ local parsers = {
   'css',
   'scss',
   'html',
+  'astro',
   -- 設定ファイル（jsonc は独立したパーサではなく、Neovim が json に対応付け済み）
   'json',
   'yaml',

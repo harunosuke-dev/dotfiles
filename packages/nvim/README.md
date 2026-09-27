@@ -742,6 +742,8 @@ lualine の各要素は `WinBar` の色を読むので、`breadcrumb` を変え�
 
 **MDX の LSP が無い。** `mdx-analyzer` は依存する `vscode-uri` の破壊的変更で起動できない（上流未修正）。`.mdx` は Treesitter のハイライトと prettier の整形までは効く。
 
+**Astro は TypeScript 6 以下でしか型の機能が動かない。** Astro の LSP と `astro check` は、TS 7 の npm パッケージから消えた `tsserverlibrary.js` を使う。Astro のプロジェクトでは TS 6 を入れる。`.astro` の整形は prettierd ではなく prettier を直接使う（`lua/plugins/format.lua` の HACK）。
+
 **巨大ファイルでは機能が落ちる。** 1.5MB を超えると Treesitter と LSP を無効化し、Vim の正規表現ハイライトに切り替える。色は残り、補完もバッファ内の単語・パス・スニペットは動く。
 
 **日本語入力からの自動復帰はしない。** 挿入モードを抜けた時などに英字へ切り替えるが、逆方向は `macism` が受け付けないため手動で切り替える。

@@ -10,6 +10,7 @@ local servers = {
   'cssmodules_ls', -- CSS Modules（styles.foo から .module.css へ定義ジャンプ）
   'css_variables', -- CSS カスタムプロパティ（var(--x) の補完と定義ジャンプ）
   'html', -- HTML
+  'astro', -- Astro
   'jsonls', -- JSON（package.json / tsconfig.json のスキーマ補完）
   'bashls', -- sh / bash（shellcheck 連携）
   'marksman', -- Markdown

@@ -6,6 +6,10 @@ local formatters_by_ft = {
   lua = { 'stylua' },
   sh = { 'shfmt' },
   bash = { 'shfmt' },
+  -- HACK: prettierd は prettier-plugin-astro を読み込めない（Cannot find package .../prettier/index.js）。
+  --       .astro だけ prettier を直接使う。プロジェクトの node_modules の prettier とプラグインが効く。
+  --       prettierd で .astro が整形できるようになったら、下の共通の一覧に戻す
+  astro = { 'prettier' },
 }
 
 for _, ft in ipairs({
