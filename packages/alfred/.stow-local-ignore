@@ -1,0 +1,2 @@
+# workflow/ は Alfred へ取り込む元データで、ホームに配るものではない
+^/workflow$

@@ -1,0 +1,205 @@
+#!/usr/bin/env bash
+# Alfred から tmux セッションを選び、Ghostty に表示する。
+# どのアプリが前面にあっても呼べるよう、端末の外から tmux を操作する。
+#
+#   alfred-tmux sessions [query]   既存セッションの一覧（Script Filter 用 JSON）
+#   alfred-tmux repos              リポジトリの一覧（Script Filter 用 JSON）
+#   alfred-tmux open <session>     セッションを Ghostty に表示する。$dir があれば新規作成時の起点にする
+#
+# NOTE: Alfred から呼ばれると PATH に Homebrew が含まれない。
+# また /bin/bash（3.2）で動くため、連想配列などは使わない
+set -euo pipefail
+
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+# WARNING: UTF-8 以外のロケールでは、tmux が -F の出力に含まれるタブを _ に置き換える。
+# 区切りが消えて一覧が空になるため、ロケールが無い環境でも UTF-8 を指定する
+export LANG="${LANG:-en_US.UTF-8}"
+
+GHOSTTY_TERMNAME="xterm-ghostty"
+SESSIONIZER_CONF="${XDG_CONFIG_HOME:-$HOME/.config}/tmux-sessionizer/tmux-sessionizer.conf"
+
+# tmux のターゲット指定では . と : が区切り文字になる。
+# 名前に残すと has-session も switch-client も届かない
+sanitize_session_name() {
+    local name="$1"
+    name="${name//./_}"
+    name="${name//:/_}"
+    printf '%s' "$name"
+}
+
+# Ghostty に繋がっているクライアントのうち、最後に操作したものの tty
+ghostty_client_tty() {
+    tmux list-clients -F '#{client_activity} #{client_termname} #{client_tty}' 2>/dev/null |
+        awk -v t="$GHOSTTY_TERMNAME" '$2 == t' |
+        sort -rn |
+        awk 'NR == 1 { print $3 }'
+}
+
+# TSV（title, subtitle, arg, dir）を Script Filter の JSON へ変換する
+tsv_to_items() {
+    jq -R -s '{
+        items: [
+            split("\n")[] | select(length > 0) | split("\t") |
+            {
+                uid: .[2],
+                title: .[0],
+                subtitle: .[1],
+                arg: .[2],
+                match: (.[0] + " " + .[1]),
+                variables: { dir: .[3] }
+            }
+        ]
+    }'
+}
+
+cmd_sessions() {
+    local query="${1:-}" current tty
+    tty="$(ghostty_client_tty)"
+    current=''
+    if [ -n "$tty" ]; then
+        current="$(tmux display-message -c "$tty" -p '#S' 2>/dev/null || true)"
+    fi
+
+    # 表示中のセッションは飛び先ではないので末尾へ回す。
+    # それ以外は最後に開いた順に並べる
+    local rows
+    rows="$(tmux list-sessions -F '#{session_last_attached}	#{session_name}	#{session_path}' 2>/dev/null |
+        awk -F '\t' -v cur="$current" -v q="$query" '
+            BEGIN { q = tolower(q) }
+            q != "" && index(tolower($2), q) == 0 { next }
+            { rank = ($2 == cur) ? 0 : 1; print rank "\t" $1 "\t" $2 "\t" $3 }
+        ' |
+        sort -t "$(printf '\t')" -k1,1nr -k2,2nr |
+        awk -F '\t' -v cur="$current" -v home="$HOME" '{
+            path = $4
+            if (index(path, home) == 1) path = "~" substr(path, length(home) + 1)
+            sub_ = ($3 == cur) ? "Current  " path : path
+            print $3 "\t" sub_ "\t" $3 "\t"
+        }' || true)"
+
+    # 入力した名前のセッションが無ければ、新規作成の候補を出す
+    local new_name
+    new_name="$(sanitize_session_name "$query")"
+    if [ -n "$new_name" ] && ! tmux has-session -t "=$new_name" 2>/dev/null; then
+        rows="${rows:+$rows
+}New session: $new_name	Create in ~	$new_name	$HOME"
+    fi
+
+    printf '%s\n' "$rows" | tsv_to_items
+}
+
+# 候補とセッション名の決め方は tmux-sessionizer-popup と揃える。
+# 同じディレクトリから別名のセッションができると、どちらから開いたかで行き先が分かれるため
+#
+# NOTE: 検索パスは tmux-sessionizer.conf の TS_SEARCH_PATHS / TS_EXACT_PATHS /
+# TS_IGNORE_NAMES をそのまま読む。対象を変えるときはそちらを直す
+cmd_repos() {
+    local TS_SEARCH_PATHS=() TS_EXACT_PATHS=() TS_IGNORE_NAMES=(.git node_modules)
+    if [ -f "$SESSIONIZER_CONF" ]; then
+        # shellcheck source=/dev/null
+        source "$SESSIONIZER_CONF"
+    fi
+
+    local exact=() d e
+    for e in ${TS_EXACT_PATHS[@]+"${TS_EXACT_PATHS[@]}"}; do
+        e="${e/#\~/$HOME}"
+        [ -d "$e" ] && exact+=("$e")
+    done
+
+    local prune=() n
+    for n in "${TS_IGNORE_NAMES[@]}"; do
+        prune+=(! -name "$n")
+    done
+
+    is_exact() {
+        local x
+        for x in ${exact[@]+"${exact[@]}"}; do
+            [ "$x" = "$1" ] && return 0
+        done
+        return 1
+    }
+
+    list_dirs() {
+        for d in ${TS_SEARCH_PATHS[@]+"${TS_SEARCH_PATHS[@]}"}; do
+            d="${d/#\~/$HOME}"
+            [ -d "$d" ] || continue
+            is_exact "$d" && printf '%s\n' "$d"
+            find -L "$d" -mindepth 1 -maxdepth 1 -type d ${prune[@]+"${prune[@]}"} 2>/dev/null | sort
+        done
+        for e in ${exact[@]+"${exact[@]}"}; do
+            printf '%s\n' "$e"
+        done
+    }
+
+    local active
+    active="$(tmux list-sessions -F '#S' 2>/dev/null || true)"
+
+    list_dirs | awk '!seen[$0]++' | while IFS= read -r dir; do
+        local name parent shown mark
+        name="${dir##*/}"
+        if ! is_exact "$dir"; then
+            parent="${dir%/*}"
+            name="${parent##*/}/$name"
+        fi
+        name="$(sanitize_session_name "$name")"
+
+        case "$dir" in
+            "$HOME"/*) shown="~/${dir#"$HOME"/}" ;;
+            *) shown="$dir" ;;
+        esac
+
+        # 起動中のものを先頭に集める
+        if printf '%s\n' "$active" | grep -qxF -- "$name"; then
+            mark=0
+            shown="Running  $shown"
+        else
+            mark=1
+        fi
+        printf '%s\t%s\t%s\t%s\t%s\n' "$mark" "$name" "$shown" "$name" "$dir"
+    done | sort -t "$(printf '\t')" -k1,1n -s | cut -f2- | tsv_to_items
+}
+
+cmd_open() {
+    local name
+    name="$(sanitize_session_name "${1:?session name required}")"
+
+    if ! tmux has-session -t "=$name" 2>/dev/null; then
+        tmux new-session -d -s "$name" -c "${dir:-$HOME}"
+    fi
+
+    # 既に Ghostty で tmux を開いていれば、そのクライアントの表示だけを切り替える。
+    # 端末を 1 つに保つためで、元スクリプトが st を kill し直していたことの代わり
+    local tty
+    tty="$(ghostty_client_tty)"
+    if [ -n "$tty" ]; then
+        tmux switch-client -c "$tty" -t "=$name"
+        open -a Ghostty
+        return
+    fi
+
+    # 繋がったクライアントが無ければ、tmux を開いた新しいウィンドウを作る。
+    # 名前は argv で渡し、AppleScript の文字列へ直接埋め込まない
+    osascript - "$(command -v tmux)" "$name" <<'EOF' >/dev/null
+on run argv
+    set tmuxBin to item 1 of argv
+    set sessionName to item 2 of argv
+    tell application "Ghostty"
+        set cfg to new surface configuration
+        set command of cfg to quoted form of tmuxBin & " attach-session -t " & quoted form of ("=" & sessionName)
+        set wait after command of cfg to false
+        new window with configuration cfg
+        activate
+    end tell
+end run
+EOF
+}
+
+case "${1:-}" in
+    sessions) shift; cmd_sessions "$@" ;;
+    repos) shift; cmd_repos ;;
+    open) shift; cmd_open "$@" ;;
+    *)
+        echo "usage: alfred-tmux {sessions [query]|repos|open <session>}" >&2
+        exit 2
+        ;;
+esac

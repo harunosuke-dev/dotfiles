@@ -1,0 +1,224 @@
+#!/usr/bin/env bash
+# Markdown のブックマークを Alfred から検索・追加する。
+# ファイルごとに開くブラウザを決め、private は Brave、work は Chrome で開く。
+#
+#   alfred-bookmarks list [delete]  全ブックマークの一覧（Script Filter 用 JSON）。delete で削除用の表示にする
+#   alfred-bookmarks open <url>     $tag に対応するブラウザで開く
+#   alfred-bookmarks tabs [prefix]  前面のブラウザの表示中タブを追加候補として出す（Script Filter 用 JSON）
+#   alfred-bookmarks add <url>      $tag のファイルへ $title で追記する
+#   alfred-bookmarks delete <url>   $tag のファイルからその URL の行を消す
+#
+# 書式は 1 行 1 件の `- [タイトル](URL)`。それ以外の行は読み飛ばすので、見出しやメモを書いてもよい
+#
+# NOTE: Alfred から呼ばれると PATH に Homebrew が含まれない。
+# また /bin/bash（3.2）で動くため、連想配列などは使わない
+set -euo pipefail
+
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+export LANG="${LANG:-en_US.UTF-8}"
+
+# 公開リポジトリに URL を載せないため、dotfiles の外に置く
+BOOKMARKS_DIR="${BOOKMARKS_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/bookmarks}"
+
+# tag -> ブラウザ。tag はファイル名（拡張子なし）と一致させる
+browser_for() {
+    case "$1" in
+        private) echo "Brave Browser" ;;
+        work) echo "Google Chrome" ;;
+        *) return 1 ;;
+    esac
+}
+
+# ブラウザ -> tag。tabs で保存先を決めるのに使う
+tag_for() {
+    case "$1" in
+        "Brave Browser") echo private ;;
+        "Google Chrome") echo work ;;
+        *) return 1 ;;
+    esac
+}
+
+TAGS="private work"
+
+# 1 件分の行。1 つ目がタイトル、2 つ目が URL
+ENTRY_RE='^[[:space:]]*[-*][[:space:]]+\[(.*)\]\((.*)\)[[:space:]]*$'
+
+ensure_files() {
+    local tag
+    mkdir -p "$BOOKMARKS_DIR"
+    for tag in $TAGS; do
+        [ -f "$BOOKMARKS_DIR/$tag.md" ] || printf '# %s\n\n' "$tag" >"$BOOKMARKS_DIR/$tag.md"
+    done
+}
+
+cmd_list() {
+    ensure_files
+    # 削除用では、Enter で消えることを一覧の段階で見せる
+    local label=''
+    [ "${1:-}" = delete ] && label='Delete  '
+    local tag line
+    for tag in $TAGS; do
+        while IFS= read -r line || [ -n "$line" ]; do
+            if [[ "$line" =~ $ENTRY_RE ]]; then
+                printf '%s\t%s\t%s\n' "$tag" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+            fi
+        done <"$BOOKMARKS_DIR/$tag.md"
+    done | jq -R -s --arg label "$label" '{
+        items: [
+            split("\n")[] | select(length > 0) | split("\t") |
+            {
+                title: .[1],
+                subtitle: ($label + "[" + .[0] + "] " + .[2]),
+                arg: .[2],
+                match: (.[0] + " " + .[1] + " " + .[2]),
+                quicklookurl: .[2],
+                text: { copy: .[2] },
+                variables: { tag: .[0] }
+            }
+        ]
+    }'
+}
+
+cmd_open() {
+    local url="${1:?url required}" browser
+    if browser="$(browser_for "${tag:-}")"; then
+        open -a "$browser" "$url"
+    else
+        open "$url"
+    fi
+}
+
+# ブラウザの表示中タブのタイトルと URL を 1 行ずつ返す。
+# ウィンドウが無い・起動していない場合は何も返さない
+#
+# NOTE: `tell application` は起動していないアプリを立ち上げてしまう。
+# 先に pgrep で確かめてから問い合わせる
+#
+# WARNING: アプリ名を変数で渡すと、コンパイル時に active tab などの用語を解決できない。
+# Brave も Chromium 系で辞書が同じなので、Chrome の用語を借りる
+front_tab() {
+    local browser="$1"
+    pgrep -xq "$browser" || return 0
+    osascript - "$browser" <<'EOF' 2>/dev/null || true
+on run argv
+    using terms from application "Google Chrome"
+        tell application (item 1 of argv)
+            if (count of windows) is 0 then return ""
+            set t to active tab of front window
+            return (title of t) & linefeed & (URL of t)
+        end tell
+    end using terms from
+end run
+EOF
+}
+
+cmd_tabs() {
+    local query="${1:-}" browser tag info title url
+
+    # 前面のアプリが対象のブラウザのときだけ、そのタブを候補にする。
+    # 背後で開いているだけのブラウザを拾うと、見ていないページを保存してしまう。
+    # NOTE: Alfred のウィンドウは前面のアプリを奪わないので、呼ぶ前のアプリが返る
+    browser="$(lsappinfo info -only name "$(lsappinfo front)" 2>/dev/null | sed -n 's/.*"LSDisplayName"="\(.*\)"/\1/p')"
+
+    tab_row() {
+        tag="$(tag_for "$browser")" || return 0
+        info="$(front_tab "$browser")"
+        [ -n "$info" ] || return 0
+        title="${info%%$'\n'*}"
+        url="${info#*$'\n'}"
+        case "$url" in
+            http://* | https://*) ;;
+            *) return 0 ;;
+        esac
+        # 入力があればタイトルの前に付ける。docs のような目印を付けたいときに使う
+        [ -n "$query" ] && title="$query - $title"
+        printf '%s\t%s\t%s\t%s\n' "$tag" "$browser" "$title" "$url"
+    }
+
+    tab_row | jq -R -s '
+        [ split("\n")[] | select(length > 0) | split("\t") ] as $rows |
+        { items: (
+            if ($rows | length) == 0 then
+                [{ title: "No tab to save", subtitle: "Bring Brave or Chrome to the front with an http(s) page", valid: false }]
+            else
+                [ $rows[] | {
+                    title: .[2],
+                    subtitle: ("→ " + .[0] + ".md (" + .[1] + ")  " + .[3]),
+                    arg: .[3],
+                    variables: { tag: .[0], title: .[2] }
+                } ]
+            end
+        ) }'
+}
+
+cmd_add() {
+    local url="${1:?url required}" file
+    browser_for "${tag:-}" >/dev/null || {
+        echo "Unknown tag: ${tag:-}" >&2
+        exit 1
+    }
+    ensure_files
+    file="$BOOKMARKS_DIR/$tag.md"
+
+    # 同じ URL を二重に登録しない
+    if grep -qF -- "]($url)" "$file"; then
+        echo "Already saved: ${title:-$url}"
+        return
+    fi
+
+    # 改行とタブは 1 行 1 件の書式を壊すので空白に寄せる
+    local t="${title:-$url}"
+    t="${t//$'\n'/ }"
+    t="${t//$'\t'/ }"
+
+    # 末尾に改行が無いファイルへ追記すると前の行とつながる
+    if [ -s "$file" ] && [ -n "$(tail -c 1 "$file")" ]; then
+        printf '\n' >>"$file"
+    fi
+    printf -- '- [%s](%s)\n' "$t" "$url" >>"$file"
+    echo "Added to $tag.md: $t"
+}
+
+cmd_delete() {
+    local url="${1:?url required}" file line tmp removed=''
+    browser_for "${tag:-}" >/dev/null || {
+        echo "Unknown tag: ${tag:-}" >&2
+        exit 1
+    }
+    file="$BOOKMARKS_DIR/$tag.md"
+    [ -f "$file" ] || {
+        echo "Not found: $url"
+        return
+    }
+
+    # URL が完全に一致する行だけを落とす。部分一致だと別ページまで消える。
+    # 同じディレクトリで mv するのは、書き込み途中で中断してもファイルが壊れないようにするため
+    tmp="$(mktemp "$file.XXXXXX")"
+    while IFS= read -r line || [ -n "$line" ]; do
+        if [[ "$line" =~ $ENTRY_RE ]] && [ "${BASH_REMATCH[2]}" = "$url" ]; then
+            removed="${BASH_REMATCH[1]}"
+            continue
+        fi
+        printf '%s\n' "$line"
+    done <"$file" >"$tmp"
+
+    if [ -z "$removed" ]; then
+        rm -f "$tmp"
+        echo "Not found: $url"
+        return
+    fi
+    mv "$tmp" "$file"
+    echo "Deleted from $tag.md: $removed"
+}
+
+case "${1:-}" in
+    list) shift; cmd_list "$@" ;;
+    open) shift; cmd_open "$@" ;;
+    tabs) shift; cmd_tabs "$@" ;;
+    add) shift; cmd_add "$@" ;;
+    delete) shift; cmd_delete "$@" ;;
+    *)
+        echo "usage: alfred-bookmarks {list [delete]|open <url>|tabs [prefix]|add <url>|delete <url>}" >&2
+        exit 2
+        ;;
+esac
