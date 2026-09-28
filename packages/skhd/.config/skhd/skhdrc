@@ -110,6 +110,8 @@ alt + shift - m : yabai -m space --toggle mission-control
 ###########################################################
 
 alt + shift - return : open /Applications/Ghostty.app
+# Alt + Shift + \ （0x2A）
+alt + shift - 0x2A : open /Applications/Google\ Chrome.app
 alt + shift - 0 : open /Applications/Brave\ Browser.app
 alt + shift - n : open /Applications/Notion.app
 
