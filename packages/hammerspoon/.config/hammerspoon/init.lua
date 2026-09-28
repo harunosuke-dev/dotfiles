@@ -42,4 +42,49 @@ local function toggleSource()
   end
 end
 
-hs.hotkey.bind({}, "f18", toggleSource)
+-- hidutil が変換した後のキーコード（F18）
+local F18 = 0x4F
+
+-- 押している間に他のキーが入っても、何も起きないようにする。
+-- 元が cmd のキーなので、押しながら別のキーを叩く癖が残っており、
+-- そのまま通すと文字が紛れ込む
+local f18Held = false
+local f18HeldAt = 0
+
+-- WARNING: keyUp を取りこぼした時に f18Held が立ったままになると、
+-- すべてのキー入力が止まる。押しっぱなしのまま時間が経った場合は
+-- ブロックを解く。キーリピートが無効な環境でも復帰できるようにする
+local HOLD_LIMIT = 2
+
+-- eventtap も watcher と同じくグローバルに保持する
+keyTap = hs.eventtap.new({
+  hs.eventtap.event.types.keyDown,
+  hs.eventtap.event.types.keyUp,
+}, function(event)
+  local isKeyDown = event:getType() == hs.eventtap.event.types.keyDown
+  local code = event:getKeyCode()
+
+  if code == F18 then
+    -- 押した瞬間だけ切り替える。キーリピートでは反応させない
+    if isKeyDown and not f18Held then
+      toggleSource()
+    end
+    f18Held = isKeyDown
+    f18HeldAt = hs.timer.secondsSinceEpoch()
+    return true
+  end
+
+  -- toggleSource が送った英数 / かなは通す。
+  -- F18 を押した直後に届くので、下のブロックに巻き込むと切り替わらない
+  if code == EISU or code == KANA then
+    return false
+  end
+
+  if isKeyDown and f18Held and hs.timer.secondsSinceEpoch() - f18HeldAt < HOLD_LIMIT then
+    return true
+  end
+
+  -- keyUp は通す。押し下げだけ捨てると、キーが押されたままにならない
+  return false
+end)
+keyTap:start()
