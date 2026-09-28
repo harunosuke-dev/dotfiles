@@ -112,3 +112,14 @@ alt + shift - m : yabai -m space --toggle mission-control
 alt + shift - return : open /Applications/Ghostty.app
 alt + shift - 0 : open /Applications/Brave\ Browser.app
 alt + shift - n : open /Applications/Notion.app
+
+###########################################################
+# Launcher（Alfred）
+###########################################################
+# Alfred の Workflow「dotfiles launcher」のキーワードを入力した状態で開く。
+# ホットキーを Alfred 側ではなくここで持つのは、割り当てを skhdrc に集めるため。
+# 文字は元にした dmenu-scripts（Super + s / p / b）に合わせている
+alt + shift - s : osascript -e 'tell application id "com.runningwithcrayons.Alfred" to search "tm "'
+alt + shift - p : osascript -e 'tell application id "com.runningwithcrayons.Alfred" to search "rp "'
+alt + shift - b : osascript -e 'tell application id "com.runningwithcrayons.Alfred" to search "bm "'
+alt + shift - a : osascript -e 'tell application id "com.runningwithcrayons.Alfred" to search "bma "'
