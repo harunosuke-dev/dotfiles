@@ -129,6 +129,18 @@ symbol = "\ueb29 "
 [nodejs]
 symbol = "\ued0d node "
 
+# プロジェクトの node_modules に入っている TypeScript の版を出す。
+# Starship に TypeScript のモジュールは無い。グローバルの tsc ではなく、そのプロジェクトで実際に使われる版を見るため。
+# プロンプトは毎回描かれるので、node や tsc は起動せず package.json を sed で読む
+[custom.typescript]
+detect_files = ["tsconfig.json"]
+when = "test -f node_modules/typescript/package.json"
+command = "sed -n 's/^  *\"version\": \"\\(.*\\)\",$/\\1/p' node_modules/typescript/package.json"
+shell = ["sh"]
+symbol = "\ue628 "
+style = "bold blue"
+format = "[$symbol(v$output )]($style)"
+
 [lua]
 symbol = "\ue826 lua "
 
