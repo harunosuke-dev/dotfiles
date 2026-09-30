@@ -243,6 +243,28 @@ return {
         end
         wipe_blank_buffers()
       end
+
+      -- 差分を閉じたらファイラを出す。codediff は最後の1枚でも空のタブを
+      -- 作ってから閉じるので（ui/lifecycle/cleanup.lua）、nvim は終わらない。
+      -- 残った窓をそのままファイラにする。
+      -- 開いていたファイルはバッファとして残るので ]b や <Space>fb で戻れる
+      vim.api.nvim_create_autocmd('User', {
+        pattern = 'CodeDiffClose',
+        group = vim.api.nvim_create_augroup('user_codediff_fallback', { clear = true }),
+        callback = function()
+          vim.schedule(function()
+            for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
+              for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
+                if vim.bo[vim.api.nvim_win_get_buf(win)].filetype:match('^codediff') then
+                  return -- 別の差分がまだ開いている
+                end
+              end
+            end
+            pcall(vim.cmd, 'Oil')
+            wipe_blank_buffers()
+          end)
+        end,
+      })
     end,
     keys = {
       { '<leader>gc', '<cmd>CodeDiff<cr>', desc = '[G]it [C]hanges : review the tree' },
