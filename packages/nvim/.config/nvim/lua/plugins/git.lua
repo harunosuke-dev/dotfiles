@@ -172,6 +172,32 @@ return {
       require('codediff').setup(opts)
       -- 自前のハイライトを setup 時に定義するため、こちらから当て直す
       require('config.highlights').diff()
+
+      -- 差分を開くと、以後に作る窓から行番号などが消える問題への対処。
+      --
+      -- explorer は nui の split で、number や signcolumn を切って作られる
+      -- （ui/explorer/render.lua）。窓ローカルのつもりの指定だが、Neovim では
+      -- 窓ローカル項目を当てると大域の既定まで書き換わる。
+      -- 新しい窓は「今いる窓」ではなく大域から値を引くため、影響が全体へ及ぶ。
+      --
+      -- 読み込み直後（まだ差分を開いていない時点）の値を控え、開いた後に戻す
+      local WINDOW_DEFAULTS = { 'number', 'relativenumber', 'signcolumn', 'wrap', 'list', 'foldcolumn', 'spell' }
+      local defaults = {}
+      for _, name in ipairs(WINDOW_DEFAULTS) do
+        defaults[name] = vim.go[name]
+      end
+
+      vim.api.nvim_create_autocmd('User', {
+        pattern = 'CodeDiffOpen',
+        group = vim.api.nvim_create_augroup('user_codediff_window_defaults', { clear = true }),
+        callback = function()
+          vim.schedule(function()
+            for name, value in pairs(defaults) do
+              vim.go[name] = value
+            end
+          end)
+        end,
+      })
     end,
     keys = {
       { '<leader>gc', '<cmd>CodeDiff<cr>', desc = '[G]it [C]hanges : review the tree' },
