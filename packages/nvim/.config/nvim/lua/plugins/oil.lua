@@ -15,12 +15,11 @@ return {
   'stevearc/oil.nvim',
   -- netrw を置き換えるため遅延ロードしない（起動直後に nvim . で開けるように）
   lazy = false,
-  -- 引数なしで開いた時はファイラから始める。
-  -- 起動画面は持たない（lua/plugins/snacks.lua の注記を参照）。
+  -- 引数なしで開いた時の画面。起動画面は持たない（lua/plugins/snacks.lua の注記）。
   --
-  -- git に変更が残っていれば、差分のレビューを1枚目のタブに置く。
-  -- 先に見たいのは「何をしていたか」で、ファイラはその後。
-  -- codediff のタブを閉じればファイラが残り、そのまま次の作業へ移れる。
+  -- git に変更が残っていれば差分のレビューから始める。「何をしていたか」の答えが
+  -- そこにあるため。残っていなければファイラから始める。開くのはどちらか一方。
+  -- codediff を閉じた後にファイラを出すのは lua/plugins/git.lua の側。
   --
   -- VimEnter を待つのは codediff が cmd で遅延ロードされるため
   init = function()
@@ -32,17 +31,28 @@ return {
         end
         local review = has_changes()
         vim.schedule(function()
-          pcall(vim.cmd, 'Oil')
           if not review then
+            pcall(vim.cmd, 'Oil')
             return
           end
-          -- codediff は自分で tabnew するため、そのままだと2枚目に付く。
-          -- :CodeDiff から戻った時点ではまだタブが無いので、
-          -- 新しいタブへ入った時に先頭へ移して順番を入れ替える
+          -- codediff は必ず tabnew する（ui/view/side_by_side.lua の create）。
+          -- そのままだと起動時の空タブが1枚目に残るので、
+          -- 作られたタブへ入った時点で空の方を閉じる
+          local start_tab = vim.api.nvim_get_current_tabpage()
+          local start_buf = vim.api.nvim_get_current_buf()
           local id = vim.api.nvim_create_autocmd('TabNewEntered', {
             once = true,
             callback = function()
-              pcall(vim.cmd, 'tabmove 0')
+              vim.schedule(function()
+                if vim.api.nvim_tabpage_is_valid(start_tab) then
+                  pcall(vim.cmd, vim.api.nvim_tabpage_get_number(start_tab) .. 'tabclose')
+                end
+                -- タブを閉じてもバッファは一覧に残る。無名のまま残ると
+                -- ]b や <Space>fb に空の行が混ざるので捨てる
+                if vim.api.nvim_buf_is_valid(start_buf) and vim.api.nvim_buf_get_name(start_buf) == '' then
+                  pcall(vim.api.nvim_buf_delete, start_buf, {})
+                end
+              end)
             end,
           })
           if not pcall(vim.cmd, 'CodeDiff') then
