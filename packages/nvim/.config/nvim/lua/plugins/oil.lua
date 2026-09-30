@@ -46,6 +46,10 @@ return {
   },
   opts = {
     default_file_explorer = true,
+    -- 外部でファイルが増減・改名された時に一覧を追従させる。
+    -- 開いているディレクトリごとに fs_event を張る（oil/view.lua）。
+    -- 編集中（modified）や oil 自身の操作中は触らないので、入力は壊れない
+    watch_for_changes = true,
     delete_to_trash = true, -- 削除は :w 時にゴミ箱へ（復元可能）
     skip_confirm_for_simple_edits = false, -- 変更内容の確認は必ず出す
     view_options = {
