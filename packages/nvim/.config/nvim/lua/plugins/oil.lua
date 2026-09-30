@@ -18,8 +18,9 @@ return {
   -- 引数なしで開いた時はファイラから始める。
   -- 起動画面は持たない（lua/plugins/snacks.lua の注記を参照）。
   --
-  -- git に変更が残っていれば、その上に差分のレビューを重ねる。
-  -- codediff を q で閉じるとファイラが残り、そのまま次の作業へ移れる。
+  -- git に変更が残っていれば、差分のレビューを1枚目のタブに置く。
+  -- 先に見たいのは「何をしていたか」で、ファイラはその後。
+  -- codediff のタブを閉じればファイラが残り、そのまま次の作業へ移れる。
   --
   -- VimEnter を待つのは codediff が cmd で遅延ロードされるため
   init = function()
@@ -32,8 +33,20 @@ return {
         local review = has_changes()
         vim.schedule(function()
           pcall(vim.cmd, 'Oil')
-          if review then
-            pcall(vim.cmd, 'CodeDiff')
+          if not review then
+            return
+          end
+          -- codediff は自分で tabnew するため、そのままだと2枚目に付く。
+          -- :CodeDiff から戻った時点ではまだタブが無いので、
+          -- 新しいタブへ入った時に先頭へ移して順番を入れ替える
+          local id = vim.api.nvim_create_autocmd('TabNewEntered', {
+            once = true,
+            callback = function()
+              pcall(vim.cmd, 'tabmove 0')
+            end,
+          })
+          if not pcall(vim.cmd, 'CodeDiff') then
+            pcall(vim.api.nvim_del_autocmd, id)
           end
         end)
       end,
