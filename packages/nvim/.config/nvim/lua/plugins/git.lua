@@ -198,6 +198,51 @@ return {
           end)
         end,
       })
+
+      -- 名前も中身も無いバッファを捨てる。
+      -- codediff は tabnew でタブを作るため、そこで生まれた空のバッファが
+      -- 窓から外れた後も一覧に残り、]b や <Space>fb に無名の行が混ざる
+      local function wipe_blank_buffers()
+        for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+          local blank = vim.bo[buf].buflisted
+            and vim.bo[buf].buftype == ''
+            and vim.api.nvim_buf_get_name(buf) == ''
+            and not vim.bo[buf].modified
+            and #vim.fn.win_findbuf(buf) == 0
+            and vim.api.nvim_buf_line_count(buf) == 1
+            and vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == ''
+          if blank then
+            pcall(vim.api.nvim_buf_delete, buf, {})
+          end
+        end
+      end
+
+      -- gf（open_in_prev_tab）は「1つ左のタブで開く」。差分を左端に置くと
+      -- 左が無いので、新しいタブが左端に差し込まれて差分が押し出される。
+      -- 呼び出しの前後でタブを入れ替え、右隣で開く形に反転させる。
+      -- ファイルの解決や仮想バッファの扱いは本来の実装をそのまま使う。
+      --
+      -- WARNING: プラグインの内部関数を包んでいる。名前や引数が変われば効かなくなる。
+      -- その時は gf が元の「左で開く」に戻るだけで、壊れはしない
+      local panes = require('codediff.ui.view.actions.panes')
+      local open_in_prev_tab = panes.open_in_prev_tab
+      panes.open_in_prev_tab = function(ctx)
+        local diff_tab = vim.api.nvim_get_current_tabpage()
+        if #vim.api.nvim_list_tabpages() > 1 then
+          pcall(vim.cmd, 'tabmove +1')
+        end
+        open_in_prev_tab(ctx)
+        -- 差分を左端へ戻す。開いたファイルの側にフォーカスを残す
+        local opened = vim.api.nvim_get_current_tabpage()
+        if vim.api.nvim_tabpage_is_valid(diff_tab) and diff_tab ~= opened then
+          vim.api.nvim_set_current_tabpage(diff_tab)
+          pcall(vim.cmd, 'tabmove 0')
+          if vim.api.nvim_tabpage_is_valid(opened) then
+            vim.api.nvim_set_current_tabpage(opened)
+          end
+        end
+        wipe_blank_buffers()
+      end
     end,
     keys = {
       { '<leader>gc', '<cmd>CodeDiff<cr>', desc = '[G]it [C]hanges : review the tree' },
