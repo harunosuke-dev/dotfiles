@@ -46,6 +46,9 @@ opt.inccommand = 'split' -- :%s/foo/bar の置換結果をプレビュー表示
 -- 最後に適用する
 vim.g.transparent_background = true
 opt.termguicolors = true
+-- 起動時のイントロ画面を出さない。引数なしで開いた時はファイラか差分を出すので、
+-- 一瞬だけ見えて消える案内文に意味が無い
+opt.shortmess:append('I')
 -- 使うのは dark の配色だけ。everforest や gruvbox は 'background' の値で
 -- light と dark が変わるため、既定と同じ値でも明示しておく
 opt.background = 'dark'
