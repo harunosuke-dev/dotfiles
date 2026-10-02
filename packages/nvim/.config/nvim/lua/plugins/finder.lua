@@ -260,8 +260,10 @@ return {
     -- 手元のプロジェクトをまとめて横断する
     { '<leader>fF', find_files(scope_projects), desc = '[F]ind [F]ile across projects' },
     { '<leader>fG', find_grep(scope_projects), desc = '[F]ind by [G]rep across projects' },
-    -- ホーム全体。grep へは Alt-g で移る
-    { '<leader>fH', find_files(scope_home), desc = '[F]ind file under [H]ome' },
+    -- ホーム全体。プロジェクト以外（書類や設定）まで探す時だけ使うので、
+    -- 押しにくい <leader>F 側へ置く
+    { '<leader>FF', find_files(scope_home), desc = '[F]ind [F]ile under home' },
+    { '<leader>FG', find_grep(scope_home), desc = '[F]ind by [G]rep under home' },
 
     -- カーソル下の単語をそのまま検索。調べ物の起点として使用頻度が高い。
     -- 範囲は <leader>fg と揃える。片方だけ今の場所を見ると、
