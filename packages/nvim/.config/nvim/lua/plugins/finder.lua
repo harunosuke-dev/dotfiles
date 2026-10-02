@@ -129,26 +129,20 @@ end
 --- files に rg_opts を、live_grep に fd_opts を渡しても無視されるので、
 --- 両方を持たせて1つの関数で済ませる
 
---- 今いる場所（fzf-lua の既定）
-local function scope_cwd()
-  return {}
-end
-
 --- 今のバッファから見た git のルート。worktree や submodule の .git も拾う。
---- リポジトリの外では今の場所のまま動かす
+--- リポジトリの外では今の場所のまま動かす。
+--- 一番よく押すキーに割り当てるため、外れた時も通知は出さない。
+--- どこを見ているかはプロンプトのディレクトリ名で分かる
 local function scope_root()
   local path = vim.api.nvim_buf_get_name(0)
   local root = vim.fs.root(path ~= '' and path or vim.uv.cwd(), '.git')
-  if not root then
-    vim.notify('git リポジトリの外です。今の場所を検索します', vim.log.levels.WARN)
-  end
   return {
     cwd = root,
     prompt = vim.fn.fnamemodify(root or vim.uv.cwd(), ':t') .. '❯ ',
   }
 end
 
---- ホーム以下
+--- ホーム以下。プロジェクト以外（書類や設定）まで探したい時に使う
 local function scope_home()
   return {
     cwd = vim.env.HOME,
@@ -184,13 +178,21 @@ local function find_grep(scope)
   end
 end
 
+--- 決まった語で検索する。カーソル下の語（grep_cword）や
+--- 選択した文字列（grep_visual）を、同じ範囲で引く
+local function find_word(picker, scope)
+  return function()
+    require('fzf-lua')[picker](scope())
+  end
+end
+
 return {
   'ibhagwan/fzf-lua',
   cmd = 'FzfLua',
   keys = {
-    -- ファイル系
-    { '<leader>ff', find_files(scope_cwd), desc = '[F]ind [F]ile in this project' },
-    { '<leader>fg', find_grep(scope_cwd), desc = '[F]ind by [G]rep in this project' },
+    -- ファイル系。範囲は3段階。git のルート → 手元のプロジェクト全部 → ホーム
+    { '<leader>ff', find_files(scope_root), desc = '[F]ind [F]ile in the git root' },
+    { '<leader>fg', find_grep(scope_root), desc = '[F]ind by [G]rep in the git root' },
     { '<leader>fb', '<cmd>FzfLua buffers<cr>', desc = '[F]ind [B]uffer already open / <Space><Space>' },
     { '<leader>fr', '<cmd>FzfLua oldfiles<cr>', desc = '[F]ind [R]ecent across projects' },
 
@@ -244,9 +246,20 @@ return {
     -- ホーム全体。grep へは Alt-g で移る
     { '<leader>fH', find_files(scope_home), desc = '[F]ind file under [H]ome' },
 
-    -- カーソル下の単語をそのまま検索。調べ物の起点として使用頻度が高い
-    { '<leader>fw', '<cmd>FzfLua grep_cword<cr>', desc = '[F]ind [W]ord under cursor in project' },
-    { '<leader>fw', '<cmd>FzfLua grep_visual<cr>', mode = 'x', desc = '[F]ind [W]ord from selection in project' },
+    -- カーソル下の単語をそのまま検索。調べ物の起点として使用頻度が高い。
+    -- 範囲は <leader>fg と揃える。片方だけ今の場所を見ると、
+    -- サブディレクトリで開いた時に見つかり方が変わる
+    {
+      '<leader>fw',
+      find_word('grep_cword', scope_root),
+      desc = '[F]ind [W]ord under cursor in the git root',
+    },
+    {
+      '<leader>fw',
+      find_word('grep_visual', scope_root),
+      mode = 'x',
+      desc = '[F]ind [W]ord from selection in the git root',
+    },
     -- 現在のバッファ内だけを絞り込む。長いファイルの中を移動する時に速い
     { '<leader>f/', '<cmd>FzfLua blines<cr>', desc = '[F]ind [/] in this file / <Space>/' },
     { '<leader>fd', '<cmd>FzfLua diagnostics_document<cr>', desc = '[F]ind [D]iagnostics in this file' },
