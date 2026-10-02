@@ -21,7 +21,9 @@ return {
   -- そこにあるため。残っていなければファイラから始める。開くのはどちらか一方。
   -- codediff を閉じた後にファイラを出すのは lua/plugins/git.lua の側。
   --
-  -- VimEnter を待つのは codediff が cmd で遅延ロードされるため
+  -- VimEnter を待ち、さらに vim.schedule で1周遅らせる。
+  -- VimEnter の最中に :Oil を呼ぶとバッファは開くが filetype が立たず、
+  -- oil のキーマップや lua/config/oil-git.lua の git 表示が働かない（実測）
   init = function()
     vim.api.nvim_create_autocmd('VimEnter', {
       once = true,
