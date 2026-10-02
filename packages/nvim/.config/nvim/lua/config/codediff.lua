@@ -1,8 +1,22 @@
---- codediff のタブまわりの後始末。
+--- codediff のタブを入口ごとに1枚だけ持つ。
 ---
---- 差分を閉じた後に何も無い画面が残るのと、tabnew で生まれた空のバッファが
---- 一覧に残るのを防ぐ。プラグインの spec（lua/plugins/git.lua）から切り出した
+--- codediff はタブページ単位で差分を持てるため、同じキーを押すたびにタブが増える
+--- （ui/lifecycle/session.lua の active_diffs）。入口と開いたタブを覚えておき、
+--- 生きていればそこへ飛ぶ。
+---
+--- 入口ごとに分けるのは、見ている範囲が違うため。作業ツリーの差分と履歴を
+--- 1枚に押し込めると、押すたびに組み直すことになる。
 local M = {}
+
+--- 入口 → タブページ
+local tabs = {}
+
+--- :CodeDiff を呼んでから User CodeDiffOpen が来るまでの間だけ入る。
+--- scratch は「差分のタブから呼んだ時に逃げ場として作ったタブ」
+local pending
+
+--- 常に左端へ置く入口。最初に見るものなので位置を固定する
+local PINNED = 'changes'
 
 --- そのタブが差分を映しているか
 local function shows_diff(tab)
@@ -35,15 +49,86 @@ function M.wipe_blank_buffers()
   end
 end
 
+--- 指定した入口の差分を開く。既に開いていればそのタブへ飛ぶ
+--- @param entry string 入口の名前。タブを覚える鍵になる
+--- @param cmd string 実行する :CodeDiff の行
+--- @return boolean 開いたか飛べたか
+function M.open(entry, cmd)
+  local tab = tabs[entry]
+  if tab and shows_diff(tab) then
+    vim.api.nvim_set_current_tabpage(tab)
+    return true
+  end
+  tabs[entry] = nil
+
+  -- 差分のタブから呼ぶと、そのタブの差分が置き換わる。
+  -- 別のタブへ出てから開き、空になった逃げ場は開き終わりに畳む
+  local scratch
+  if shows_diff(vim.api.nvim_get_current_tabpage()) then
+    vim.cmd('tabnew')
+    scratch = vim.api.nvim_get_current_tabpage()
+  end
+
+  pending = { entry = entry, scratch = scratch }
+  if pcall(vim.cmd, cmd) then
+    return true
+  end
+
+  pending = nil
+  if scratch and vim.api.nvim_tabpage_is_valid(scratch) then
+    pcall(vim.cmd, vim.api.nvim_tabpage_get_number(scratch) .. 'tabclose')
+  end
+  return false
+end
+
 function M.setup()
+  local group = vim.api.nvim_create_augroup('user_codediff_tabs', { clear = true })
+
+  -- :CodeDiff から戻った時点ではまだタブが無い。
+  -- codediff は開き終わりに User CodeDiffOpen を出し、data にタブを載せる
+  -- （ui/view/side_by_side.lua）。そこで覚える
+  vim.api.nvim_create_autocmd('User', {
+    pattern = 'CodeDiffOpen',
+    group = group,
+    callback = function(args)
+      local tab = args.data and args.data.tabpage
+      if not pending or not tab then
+        return
+      end
+      local entry, scratch = pending.entry, pending.scratch
+      pending = nil
+      tabs[entry] = tab
+
+      -- 組み立ての最中なので、終わってから畳む
+      vim.schedule(function()
+        if scratch and vim.api.nvim_tabpage_is_valid(scratch) then
+          pcall(vim.cmd, vim.api.nvim_tabpage_get_number(scratch) .. 'tabclose')
+          M.wipe_blank_buffers()
+        end
+        if entry == PINNED and vim.api.nvim_tabpage_is_valid(tab) then
+          local current = vim.api.nvim_get_current_tabpage()
+          vim.api.nvim_set_current_tabpage(tab)
+          pcall(vim.cmd, 'tabmove 0')
+          if vim.api.nvim_tabpage_is_valid(current) then
+            vim.api.nvim_set_current_tabpage(current)
+          end
+        end
+      end)
+    end,
+  })
+
   -- 差分を閉じたらファイラを出す。codediff は最後の1枚でも空のタブを
   -- 作ってから閉じるので（ui/lifecycle/cleanup.lua）、nvim は終わらない。
   -- 残った窓をそのままファイラにする。
   -- 開いていたファイルはバッファとして残るので ]b や <Space>fb で戻れる
   vim.api.nvim_create_autocmd('User', {
     pattern = 'CodeDiffClose',
-    group = vim.api.nvim_create_augroup('user_codediff_tabs', { clear = true }),
+    group = group,
     callback = function()
+      -- 別の差分を開く途中の閉じは、入れ替えの一部なので触らない
+      if pending then
+        return
+      end
       vim.schedule(function()
         for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
           if shows_diff(tab) then

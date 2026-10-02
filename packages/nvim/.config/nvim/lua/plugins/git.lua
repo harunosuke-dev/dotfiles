@@ -227,7 +227,15 @@ return {
       end
     end,
     keys = {
-      { '<leader>gc', '<cmd>CodeDiff<cr>', desc = '[G]it [C]hanges : review the tree' },
+      -- 入口ごとにタブを1枚だけ持つ（lua/config/codediff.lua）。
+      -- 同じキーを押し直した時は、組み直さずそのタブへ飛ぶ
+      {
+        '<leader>gc',
+        function()
+          require('config.codediff').open('changes', 'CodeDiff')
+        end,
+        desc = '[G]it [C]hanges : review the tree',
+      },
       {
         '<leader>gp',
         function()
@@ -235,11 +243,17 @@ return {
           -- main 直書きだと master のリポジトリで外れる
           local base = vim.fn.systemlist({ 'git', 'symbolic-ref', '--quiet', 'refs/remotes/origin/HEAD' })[1]
           base = base and base:gsub('^refs/remotes/', '') or 'origin/main'
-          vim.cmd('CodeDiff ' .. base .. '...')
+          require('config.codediff').open('pr', 'CodeDiff ' .. base .. '...')
         end,
         desc = '[G]it [P]R : changes since branching',
       },
-      { '<leader>gh', '<cmd>CodeDiff history<cr>', desc = '[G]it [H]istory : commit by commit' },
+      {
+        '<leader>gh',
+        function()
+          require('config.codediff').open('history', 'CodeDiff history')
+        end,
+        desc = '[G]it [H]istory : commit by commit',
+      },
       {
         '<leader>gh',
         ':CodeDiff history<cr>',

@@ -57,7 +57,9 @@ return {
               end)
             end,
           })
-          if not pcall(vim.cmd, 'CodeDiff') then
+          -- 入口を覚えさせる。あとで <Space>gc を押した時、
+          -- 2枚目を作らずこのタブへ飛ぶ（lua/config/codediff.lua）
+          if not require('config.codediff').open('changes', 'CodeDiff') then
             pcall(vim.api.nvim_del_autocmd, id)
           end
         end)
