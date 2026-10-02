@@ -142,6 +142,23 @@ local function scope_root()
   }
 end
 
+--- 手元のプロジェクトをまとめて。別のリポジトリの書き方を探す時に使う。
+---
+--- cwd をホームに置き、そこからの相対パスで対象を指定する。
+--- fzf-lua は search_paths を cwd からの相対に直すため（providers/files.lua）、
+--- こうすると一覧が Repos/... の形で出る。
+---
+--- 除外の指定は要らない。この下はすべて git の管理下で、fd も rg も
+--- .gitignore に従うため node_modules などは最初から外れる。
+--- 一覧に出す場所（lua/config/projects.lua）とは別物。あちらは owner 単位
+local function scope_projects()
+  return {
+    cwd = vim.env.HOME,
+    search_paths = { 'Repos', 'Projects', '.dotfiles' },
+    prompt = 'Projects❯ ',
+  }
+end
+
 --- ホーム以下。プロジェクト以外（書類や設定）まで探したい時に使う
 local function scope_home()
   return {
@@ -240,9 +257,9 @@ return {
       end,
       desc = '[F]ind [P]roject : cd and browse',
     },
-    -- サブディレクトリで開いた時でも、プロジェクト全体を見る
-    { '<leader>fF', find_files(scope_root), desc = '[F]ind [F]ile in the git root' },
-    { '<leader>fG', find_grep(scope_root), desc = '[F]ind by [G]rep in the git root' },
+    -- 手元のプロジェクトをまとめて横断する
+    { '<leader>fF', find_files(scope_projects), desc = '[F]ind [F]ile across projects' },
+    { '<leader>fG', find_grep(scope_projects), desc = '[F]ind by [G]rep across projects' },
     -- ホーム全体。grep へは Alt-g で移る
     { '<leader>fH', find_files(scope_home), desc = '[F]ind file under [H]ome' },
 
