@@ -37,7 +37,14 @@ return {
         -- 1行目にカーソルを置くと、重なりようがなくても消えていた。
         --
         -- WARNING: winbar を持つプラグインを入れると smart が効かなくなる。
-        hide = { cursorline = 'smart' },
+        -- カーソルがこの表示と同じ行にいる時に隠す。
+        --
+        -- 'smart' は実際に重なった時だけ隠す（winline.lua:429）。
+        -- そのぶんファイル名は長く見えるが、カーソルが別の行にある間は
+        -- 1行目の右端の文字が隠れたままで読めない。
+        -- 行単位で隠せば、その行へカーソルを動かせば読める。
+        -- ファイル名は画面下のパス表示でも分かる
+        hide = { cursorline = true },
         render = function(props)
           local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(props.buf), ':t')
           if filename == '' then
