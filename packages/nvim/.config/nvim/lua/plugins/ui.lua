@@ -149,6 +149,32 @@ return {
         return win_bar.fg and string.format('#%06x', win_bar.fg) or nil
       end
 
+      -- 今のファイルの位置。git のルートからの相対で出す。
+      --
+      -- ファイル名はタブ行と incline にも出る。
+      -- ただし同名のファイルを複数開くと区別できない。
+      -- 絶対パスは幅を食い尽くす。
+      -- cwd 起点（lualine の path = 1）はサブディレクトリで開くと ../../ が並ぶ。
+      -- リポジトリの外では :~ に短縮した絶対パスへ落とす。
+      --
+      -- ファイル名だけ太字にして、パスの中のどこが名前かを見分ける。
+      -- 未保存の印は出さない。タブ行と incline に既にある。
+      -- 鍵は読み取り専用の時だけ出す。
+      -- 書き込めるのが普通の状態なので、そちらに印を付けると意味が薄れる
+      local function buffer_path()
+        local file = vim.api.nvim_buf_get_name(0)
+        if file == '' or vim.bo.buftype ~= '' then
+          return ''
+        end
+
+        local root = vim.fs.root(file, '.git')
+        local shown = root and (vim.fs.relpath(root, file) or file) or vim.fn.fnamemodify(file, ':~')
+        local dir, name = shown:match('^(.*/)([^/]+)$')
+        local lock = vim.bo.readonly and ' %#LualinePathLock#󰌾' or ''
+
+        return (dir or '') .. '%#LualinePathFile#' .. (name or shown) .. lock
+      end
+
       -- マクロ記録中の表示。q の誤爆で記録が始まった時に気づけるようにする
       local macro = {
         function()
@@ -231,6 +257,7 @@ return {
               color = { fg = dim(), gui = 'bold' },
               icon = ' ',
             },
+            { buffer_path, color = { fg = dim() } },
             {
               'diff',
               colored = false, -- 追加・変更・削除を色分けしない

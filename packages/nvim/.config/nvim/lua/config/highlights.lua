@@ -649,6 +649,15 @@ function M.match_statusline()
   vim.api.nvim_set_hl(0, 'LualineTabActive', { fg = normal.fg, bold = true })
   vim.api.nvim_set_hl(0, 'LualineTabInactive', { fg = comment.fg })
 
+  -- ステータスラインのパスのうち、ファイル名だけを太字にする。
+  -- 明るさは他の控えめな要素（WinBar の文字色）に合わせる
+  local win_bar = vim.api.nvim_get_hl(0, { name = 'WinBar', link = false })
+  vim.api.nvim_set_hl(0, 'LualinePathFile', { fg = win_bar.fg, bold = true })
+
+  -- 読み取り専用の鍵だけ色を付ける。「書けない」は警告に近い状態なので、
+  -- 診断の警告色を借りる。色は診断にだけ使う方針を崩さずに済む
+  vim.api.nvim_set_hl(0, 'LualinePathLock', { link = 'DiagnosticWarn' })
+
   -- lualine は区画ごとに自前の背景を持つので、そちらも作り直す。
   -- 現在の設定を取り出してテーマだけ差し替える（lazy.nvim の opts は
   -- キャッシュされていて評価し直せない）
