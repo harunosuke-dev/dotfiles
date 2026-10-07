@@ -11,6 +11,10 @@ local M = {}
 --- 入口 → タブページ
 local tabs = {}
 
+--- 入口 → その時に対象としたもの（ファイル履歴のパスなど）。
+--- 同じ入口でも対象が変われば開き直す
+local targets = {}
+
 --- :CodeDiff を呼んでから User CodeDiffOpen が来るまでの間だけ入る。
 --- scratch は「差分のタブから呼んだ時に逃げ場として作ったタブ」
 local pending
@@ -52,14 +56,22 @@ end
 --- 指定した入口の差分を開く。既に開いていればそのタブへ飛ぶ
 --- @param entry string 入口の名前。タブを覚える鍵になる
 --- @param cmd string 実行する :CodeDiff の行
+--- @param target string? 対象。ファイル履歴のように入口が同じでも中身が変わる場合に渡す
 --- @return boolean 開いたか飛べたか
-function M.open(entry, cmd)
+function M.open(entry, cmd, target)
   local tab = tabs[entry]
   if tab and shows_diff(tab) then
-    vim.api.nvim_set_current_tabpage(tab)
-    return true
+    if targets[entry] == target then
+      vim.api.nvim_set_current_tabpage(tab)
+      return true
+    end
+    -- 入口は同じでも対象が違う。古い方を畳んでから開き直す。
+    -- 先に pending を立てて、閉じた拍子にファイラが出るのを止める
+    pending = { entry = entry }
+    pcall(vim.cmd, vim.api.nvim_tabpage_get_number(tab) .. 'tabclose')
   end
   tabs[entry] = nil
+  targets[entry] = target
 
   -- 差分のタブから呼ぶと、そのタブの差分が置き換わる。
   -- 別のタブへ出てから開き、空になった逃げ場は開き終わりに畳む
