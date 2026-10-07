@@ -129,10 +129,11 @@ function M.setup()
     end,
   })
 
-  -- 差分を閉じたらファイラを出す。codediff は最後の1枚でも空のタブを
-  -- 作ってから閉じるので（ui/lifecycle/cleanup.lua）、nvim は終わらない。
-  -- 残った窓をそのままファイラにする。
-  -- 開いていたファイルはバッファとして残るので ]b や <Space>fb で戻れる
+  -- 差分を閉じて何も残らなかった時だけファイラを出す。
+  --
+  -- codediff は最後の1枚でも空のタブを作ってから閉じるので
+  -- （ui/lifecycle/cleanup.lua）、nvim は終わらず空の画面が残る。そこを埋める。
+  -- 編集していたファイルが残っている時に割り込むと、見ていたものを奪うことになる
   vim.api.nvim_create_autocmd('User', {
     pattern = 'CodeDiffClose',
     group = group,
@@ -147,7 +148,14 @@ function M.setup()
             return -- 別の差分がまだ開いている
           end
         end
-        pcall(vim.cmd, 'Oil')
+        local buf = vim.api.nvim_get_current_buf()
+        local blank = vim.api.nvim_buf_get_name(buf) == ''
+          and vim.bo[buf].buftype == ''
+          and vim.api.nvim_buf_line_count(buf) == 1
+          and vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == ''
+        if blank then
+          pcall(vim.cmd, 'Oil')
+        end
         M.wipe_blank_buffers()
       end)
     end,
