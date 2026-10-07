@@ -66,69 +66,28 @@ return {
         map('n', '<leader>hb', function()
           gs.blame_line({ full = true })
         end, '[H]unk [B]lame : commit for line')
-        -- 行を触ったコミットを遡る。blame は最後の1件しか出ないので別に張る。
+        -- 1ファイルに絞った差分。gitsigns の diffthis ではなく codediff で開く。
         --
-        -- fzf-lua の git_bcommits はビジュアルモードだと選択範囲に対して
-        -- git log -L を走らせる（providers/git.lua）。ノーマルモードなら
-        -- ファイル全体の履歴になるので、1つのキーで両方まかなえる
-        map({ 'n', 'x' }, '<leader>hl', function()
-          require('fzf-lua').git_bcommits()
-        end, '[H]unk [L]og : commits for line')
-        -- 差分表示は開閉のトグルにする。
+        -- diffthis は縦分割でインデックス側のバッファを開くが、閉じる順番を誤ると
+        -- 落ちる（差分モードのまま窓を解放すると、幅の再計算で DiffUpdated が飛び、
+        -- 壊れかけのウィンドウ一覧を辿って SIGSEGV）。その回避に30行以上使っていた。
         --
-        -- diffthis は縦分割でインデックス側のバッファ（名前が gitsigns:// で始まる）を
-        -- 開くが、カーソルは元のファイル側に残る。そこで :q を押すと「自分のファイルの
-        -- 窓」が閉じ、インデックス側だけが残る。中身がほぼ同じなので気づきにくく、
-        -- 「gitsigns の記号が消えた」ように見えてしまう。
-        -- 実際には差分ゼロの読み取り用バッファを見ているだけで、壊れてはいない
-        --
-        -- 閉じる時は **先に差分モードを解いてから** 窓を閉じること。逆順にすると落ちる。
-        --
-        -- diff のまま nvim_win_close を呼ぶと、窓を解放する途中で残った窓の幅が
-        -- 変わり、その再計算のために差分が引き直される。そこから DiffUpdated が
-        -- 飛び、autocmd の中で win_findbuf がウィンドウ一覧を辿るが、この時点の
-        -- 一覧は解放しかけで壊れているため NULL を踏んで SIGSEGV になる。
-        --
-        --   nvim_win_close → win_free_mem → frame_new_width → win_set_inner_size
-        --     → update_topline → win_get_fill → diff_check_with_linestatus
-        --     → ex_diffupdate → apply_autocmds(DiffUpdated) → win_findbuf → 落ちる
-        --
-        -- DiffUpdated を拾っているのは render-markdown（core/manager.lua）なので、
-        -- **markdown を開いている時だけ**落ちる。他のファイル型では再現しない。
-        -- 素性は Neovim 側の再入バグだが、diffoff! を先に済ませておけば
-        -- 解放中に差分の引き直しが起きなくなり、autocmd 自体が飛ばない。
-        --
-        -- 素の diffoff（bang 無し）は今の窓にしか効かず、残る側の scrollbind や
-        -- foldmethod が差分用のまま取り残される。bang 付きでタブページ全体を戻す
-        local function close_diff()
-          local targets = {}
-          for _, win in ipairs(vim.api.nvim_list_wins()) do
-            local buf = vim.api.nvim_win_get_buf(win)
-            if vim.api.nvim_buf_get_name(buf):match('^gitsigns://') then
-              targets[#targets + 1] = win
+        -- codediff なら <Space>gc と同じ見た目で、タブごと閉じれば済む。
+        -- % は codediff が展開しないので、パスは自分で渡す
+        local function file_diff(revision)
+          return function()
+            local file = vim.api.nvim_buf_get_name(0)
+            if file == '' then
+              vim.notify('名前の付いたファイルでのみ使える', vim.log.levels.WARN)
+              return
             end
+            local cmd = 'CodeDiff ' .. (revision and revision .. ' ' or '') .. '-- ' .. vim.fn.fnameescape(file)
+            require('config.codediff').open('file-diff', cmd, (revision or '') .. file)
           end
-          if #targets == 0 then
-            return false
-          end
-
-          vim.cmd('diffoff!')
-          for _, win in ipairs(targets) do
-            pcall(vim.api.nvim_win_close, win, false)
-          end
-          return true
         end
 
-        map('n', '<leader>hd', function()
-          if not close_diff() then
-            gs.diffthis()
-          end
-        end, '[H]unk [D]iff against index')
-        map('n', '<leader>hD', function()
-          if not close_diff() then
-            gs.diffthis('~')
-          end
-        end, '[H]unk [D]iff against HEAD~')
+        map('n', '<leader>hd', file_diff(), '[H]unk [D]iff of this file')
+        map('n', '<leader>hD', file_diff('HEAD~'), '[H]unk [D]iff of this file against HEAD~')
 
         -- 表示の切り替え
         map('n', '<leader>ub', gs.toggle_current_line_blame, '[U]I [B]lame : toggle inline')
@@ -247,12 +206,38 @@ return {
         end,
         desc = '[G]it [P]R : changes since branching',
       },
+      -- ファイル単体の履歴。対象が変わればタブを開き直す
       {
         '<leader>gh',
         function()
+          local file = vim.api.nvim_buf_get_name(0)
+          if file == '' then
+            vim.notify('名前の付いたファイルでのみ使える', vim.log.levels.WARN)
+            return
+          end
+          require('config.codediff').open('file-history', 'CodeDiff history %', file)
+        end,
+        desc = '[G]it [H]istory of this file',
+      },
+      {
+        '<leader>gH',
+        function()
           require('config.codediff').open('history', 'CodeDiff history')
         end,
-        desc = '[G]it [H]istory : commit by commit',
+        desc = '[G]it [H]istory of the repo',
+      },
+      -- コンフリクトの3方向マージ。必ず起きる作業なのに入口が無かった
+      {
+        '<leader>gm',
+        function()
+          local file = vim.api.nvim_buf_get_name(0)
+          if file == '' then
+            vim.notify('名前の付いたファイルでのみ使える', vim.log.levels.WARN)
+            return
+          end
+          require('config.codediff').open('merge', 'CodeDiff merge ' .. vim.fn.fnameescape(file), file)
+        end,
+        desc = '[G]it [M]erge : resolve conflicts in this file',
       },
       {
         '<leader>gh',
