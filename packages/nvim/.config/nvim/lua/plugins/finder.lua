@@ -295,6 +295,9 @@ return {
       desc = '[F]ind [S]nippet for this filetype',
     },
     { '<leader>fk', '<cmd>FzfLua keymaps<cr>', desc = '[F]ind [K]eymap' },
+    -- git 系だが実体は fzf-lua なのでここに置く。
+    -- 切り替えだけなら lazygit を開くより速い
+    { '<leader>gb', '<cmd>FzfLua git_branches<cr>', desc = '[G]it [B]ranch : switch' },
     {
       '<leader>fc',
       function()
