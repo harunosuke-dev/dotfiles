@@ -31,19 +31,15 @@ return {
           margin = { vertical = 0, horizontal = 1 },
           overlap = { borders = false },
         },
-        -- カーソルが実際にこの表示と重なる時だけ隠す。
-        --
-        -- true は行だけを見て桁を見ない（winline.lua:434）。
-        -- 1行目にカーソルを置くと、重なりようがなくても消えていた。
-        --
-        -- WARNING: winbar を持つプラグインを入れると smart が効かなくなる。
         -- カーソルがこの表示と同じ行にいる時に隠す。
         --
         -- 'smart' は実際に重なった時だけ隠す（winline.lua:429）。
         -- そのぶんファイル名は長く見えるが、カーソルが別の行にある間は
         -- 1行目の右端の文字が隠れたままで読めない。
         -- 行単位で隠せば、その行へカーソルを動かせば読める。
-        -- ファイル名は画面下のパス表示でも分かる
+        -- ファイル名は画面下のパス表示にも出る。
+        --
+        -- WARNING: winbar を持つプラグインを入れると 'smart' が効かなくなる
         hide = { cursorline = true },
         render = function(props)
           local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(props.buf), ':t')
@@ -180,6 +176,70 @@ return {
         local lock = vim.bo.readonly and ' %#LualinePathLock#󰌾' or ''
 
         return (dir or '') .. '%#LualinePathFile#' .. (name or shown) .. lock
+      end
+
+      -- TODO の件数。数えるのは保存した時などに限り、再描画では読むだけにする。
+      -- 行ごとの走査は 1000 行で 6ms かかるので、100ms ごとの再描画には乗せられない。
+      --
+      -- 対象は TODO / FIXME / HACK の3つ。
+      -- NOTE と WARNING は読み手への補足で、片付ける対象ではない。
+      -- 記号と別名の対応は todo-comments の設定から読む（lua/plugins/diagnostics.lua）
+      local TODO_TAGS = { 'TODO', 'FIX', 'HACK' }
+
+      local function count_todos(buf)
+        if vim.bo[buf].buftype ~= '' then
+          return nil
+        end
+        local ok, highlight = pcall(require, 'todo-comments.highlight')
+        if not ok then
+          return nil
+        end
+        -- 別名は正式なタグへ寄せる。FIXME と BUG はどちらも FIX になる
+        local aliases = require('todo-comments.config').keywords
+        local counts = {}
+        for _, line in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
+          local found, _, keyword = highlight.match(line)
+          if found then
+            local tag = aliases[keyword] or keyword
+            counts[tag] = (counts[tag] or 0) + 1
+          end
+        end
+        return counts
+      end
+
+      vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufWritePost', 'InsertLeave' }, {
+        group = vim.api.nvim_create_augroup('user_todo_count', { clear = true }),
+        callback = function(args)
+          vim.b[args.buf].todo_counts = count_todos(args.buf)
+        end,
+      })
+
+      -- 並びは TODO / FIXME / HACK で固定する。件数で入れ替わると読み間違える。
+      --
+      -- 持っていなければその場で数える。lualine が読まれるのは最初の
+      -- BufReadPost より後なので、1枚目のファイルは上の autocmd では埋まらない
+      local function todo_count()
+        local counts = vim.b.todo_counts
+        if not counts then
+          counts = count_todos(vim.api.nvim_get_current_buf())
+          if not counts then
+            return ''
+          end
+          vim.b.todo_counts = counts
+        end
+        local ok, config = pcall(require, 'todo-comments.config')
+        if not ok then
+          return ''
+        end
+        local parts = {}
+        for _, tag in ipairs(TODO_TAGS) do
+          local n = counts[tag]
+          if n and n > 0 then
+            local keyword = config.options.keywords[tag]
+            parts[#parts + 1] = vim.trim(keyword and keyword.icon or '') .. ' ' .. n
+          end
+        end
+        return table.concat(parts, ' ')
       end
 
       -- マクロ記録中の表示。q の誤爆で記録が始まった時に気づけるようにする
