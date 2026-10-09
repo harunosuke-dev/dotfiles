@@ -297,6 +297,16 @@ vim.api.nvim_create_autocmd('FileChangedShell', {
     vim.v.fcs_choice = ''
 
     local name = vim.fn.fnamemodify(args.file, ':~:.')
+
+    -- 消えた相手とは差分が取れない。ディスク側に中身が無い。
+    -- バッファは残っているので、:w を押せばそのまま書き戻せる
+    if vim.v.fcs_reason == 'deleted' then
+      vim.notify(name .. ' が外部で削除された', vim.log.levels.WARN, {
+        title = ':w で書き戻せる',
+      })
+      return
+    end
+
     local current = args.buf == vim.api.nvim_get_current_buf()
     -- 今見ているバッファなら差分がそのまま開くので、通知は事実だけでよい。
     -- 表示時間は既定（6秒）に任せる。作業を終えた後まで残ると邪魔になる
