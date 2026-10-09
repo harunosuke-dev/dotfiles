@@ -344,6 +344,7 @@ return {
               -- 記号の列（gitsigns の隣）で使っているものと揃える
               symbols = { error = ' ', warn = ' ', info = ' ', hint = ' ' },
             },
+            { todo_count, color = { fg = dim() } },
           },
           lualine_x = {
             macro,
