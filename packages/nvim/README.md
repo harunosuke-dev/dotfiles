@@ -662,8 +662,8 @@ prefix を押してから操作する。ペインが画面の分割、ウィン�
 | 接頭辞 | 由来 | 意味 |
 |---|---|---|
 | `f` | **F**ind | 探す |
-| `g` | **G**o to | 移動する（`gg` だけは lazygit） |
-| `h` | **H**unk | Git の変更のかたまり |
+| `g` | **G**o to / **G**it | 移動する。複数ファイルを相手にする git 操作もここ |
+| `h` | **H**unk | Git の変更のかたまり。このファイルの差分もここ |
 | `r` | **R**eplace | 置換する |
 | `s` | **S**ession | セッション |
 | `n` | **N**otification | 通知 |
@@ -681,6 +681,7 @@ prefix を押してから操作する。ペインが画面の分割、ウィン�
 | `<Space>ff` | **F**ind **F**ile — ファイルを探す |
 | `<Space>fg` | **F**ind **G**rep — 全文検索 |
 | `<Space>fb` | **F**ind **B**uffer — 開いているバッファ |
+| `<Space>fp` | **F**ind **P**roject — プロジェクトへ移動 |
 | `<Space>fr` | **F**ind **R**ecent — 最近開いたファイル |
 | `<Space>fw` | **F**ind **W**ord — カーソル下の単語 |
 | `<Space>fd` | **F**ind **D**iagnostics — 診断 |
