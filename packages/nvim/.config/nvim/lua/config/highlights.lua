@@ -528,6 +528,23 @@ function M.borders()
   vim.api.nvim_set_hl(0, 'PmenuThumb', { bg = comment })
 end
 
+--- 検索の件数（noice が行末に出す `word 1/5`）をマゼンタにする。
+---
+--- noice は既定で DiagnosticVirtualTextInfo へ回すが、iceberg はそこと String に
+--- 同じ色（#89b9c2）を使っており、本文の文字列と見分けが付かない。
+--- 「検索の表示だ」と一目で分かることを優先し、本文に出ない色相を当てる。
+---
+--- 色は solarized-osaka から借りて、incline と出どころを揃える。
+--- テーマを変えても同じ色にする。検索の表示だという手掛かりを固定したい。
+--- noice 側の定義は hi def link なので、こちらが明示すれば上書きされない
+function M.search_count()
+  local ok, palette = pcall(require, 'solarized-osaka.colors')
+  if not ok then
+    return
+  end
+  vim.api.nvim_set_hl(0, 'NoiceVirtualText', { fg = palette.setup().magenta300 })
+end
+
 --- キーワードをイタリックにする。
 ---
 --- 制御構造（if / function / return など）を字形で分け、視覚的な層を作る。
@@ -694,6 +711,8 @@ function M.setup()
       vim.schedule(M.apply)
       -- 8. ステータスラインと lualine を本文に合わせる
       vim.schedule(M.match_statusline)
+      -- 9. 検索の件数を本文から浮かせる
+      M.search_count()
     end,
   })
   -- プラグインが後から記号のハイライトを定義するため、読み込みのたびに当て直す
