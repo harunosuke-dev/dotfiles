@@ -27,32 +27,34 @@ return {
       })
 
       -- 既定は下線だが、診断の警告表示にも下線を使っているため区別がつかない。
-      -- 背景色に変える。色はカラースキームから引くので :colorscheme に追従する。
+      -- 背景色の帯に変える。
       --
-      -- Visual を link しない理由が2つある。
+      -- 帯の色はテーマの定義をそのまま使う。本文との差はテーマ作者が決めている。
+      -- 以前は Visual を 1.7 倍に持ち上げて自前で作っていたが、
+      -- catppuccin のように作者が暗くしているテーマでは向きが逆になり、
+      -- 帯が白っぽく浮いていた。
       --
-      --   1. Visual は背景しか持たない。colorizer が色コードへ付けた文字色
-      --      （明るい色ほど黒くなる）が残り、黒背景に黒文字で読めなくなる
-      --   2. Visual の背景はカーソル行との差が 1.16:1 しかなく、帯が見えない
+      -- 定義を持たないテーマ（iceberg）にだけ補う。色は solarized-osaka から借りて、
+      -- incline の配色と出どころを揃える。
       --
-      -- 背景は Visual を 1.7 倍に持ち上げて 1.91:1 にし、文字色は Normal を明示する。
-      -- この組み合わせで文字と背景は 4.98:1（WCAG AA の 4.5:1 以上）になる
-      local function brighten(color, factor)
-        local r = math.min(255, math.floor(math.floor(color / 65536) % 256 * factor + 0.5))
-        local g = math.min(255, math.floor(math.floor(color / 256) % 256 * factor + 0.5))
-        local b = math.min(255, math.floor(color % 256 * factor + 0.5))
-        return r * 65536 + g * 256 + b
-      end
+      -- 文字色は常に明示する。背景だけのグループだと、colorizer が色コードへ
+      -- 付けた文字色（明るい色ほど黒くなる）が残り、黒背景に黒文字で読めなくなる
+      local FALLBACK = {
+        IlluminatedWordText = 'violet900',
+        IlluminatedWordRead = 'magenta900',
+        IlluminatedWordWrite = 'magenta900',
+      }
 
       local function set_hl()
-        local visual = vim.api.nvim_get_hl(0, { name = 'Visual', link = false })
         local normal = vim.api.nvim_get_hl(0, { name = 'Normal', link = false })
-        -- 背景を持たないカラースキームでは Visual への link に戻す
-        local hl = visual.bg and { bg = brighten(visual.bg, 1.7), fg = normal.fg } or { link = 'Visual' }
-        for _, group in ipairs({ 'IlluminatedWordText', 'IlluminatedWordRead', 'IlluminatedWordWrite' }) do
-          vim.api.nvim_set_hl(0, group, hl)
+        local ok, palette = pcall(require, 'solarized-osaka.colors')
+        local colors = ok and palette.setup() or {}
+        for group, key in pairs(FALLBACK) do
+          local theme = vim.api.nvim_get_hl(0, { name = group, link = false })
+          vim.api.nvim_set_hl(0, group, { bg = theme.bg or colors[key], fg = normal.fg })
         end
       end
+
       vim.api.nvim_create_autocmd('ColorScheme', {
         group = vim.api.nvim_create_augroup('user_illuminate_hl', { clear = true }),
         callback = set_hl,
