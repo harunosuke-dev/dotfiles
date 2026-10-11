@@ -181,10 +181,10 @@ return {
       -- TODO の件数。数えるのは保存した時などに限り、再描画では読むだけにする。
       -- 行ごとの走査は 1000 行で 6ms かかるので、100ms ごとの再描画には乗せられない。
       --
-      -- 対象は TODO / FIXME / HACK の3つ。
-      -- NOTE と WARNING は読み手への補足で、片付ける対象ではない。
+      -- 対象は片付ける予定があるものだけ。
+      -- NOTE と WARNING は読み手への補足で、消す対象ではない。
       -- 記号と別名の対応は todo-comments の設定から読む（lua/plugins/diagnostics.lua）
-      local TODO_TAGS = { 'TODO', 'FIX', 'HACK' }
+      local TODO_TAGS = { 'TODO', 'FIX', 'HACK', 'TEST' }
 
       local function count_todos(buf)
         if vim.bo[buf].buftype ~= '' then
@@ -214,7 +214,7 @@ return {
         end,
       })
 
-      -- 並びは TODO / FIXME / HACK で固定する。件数で入れ替わると読み間違える。
+      -- 並びは TODO_TAGS の順で固定する。件数で入れ替わると読み間違える。
       --
       -- 持っていなければその場で数える。lualine が読まれるのは最初の
       -- BufReadPost より後なので、1枚目のファイルは上の autocmd では埋まらない
