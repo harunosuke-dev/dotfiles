@@ -528,6 +528,51 @@ function M.borders()
   vim.api.nvim_set_hl(0, 'PmenuThumb', { bg = comment })
 end
 
+--- 診断の色を solarized-osaka のパレットに替える。
+---
+--- iceberg は DiagnosticInfo を String と、DiagnosticHint を Comment と
+--- 同じ色にしている。どちらも本文に埋もれて診断だと分からない。
+---
+--- 本文の色（String や Keyword）は別のグループなので変わらない。
+--- 連動するのは診断の表示そのものと、同じ意味づけで相乗りしている
+--- oil のファイル状態やスナックスのピッカー。
+---
+--- テーマを変えても同じ色にする。診断だという手掛かりを固定したい
+function M.diagnostics()
+  local ok, palette = pcall(require, 'solarized-osaka.colors')
+  if not ok then
+    return
+  end
+  local c = palette.setup()
+
+  -- iceberg は Sign / Underline / Floating を個別に定義していて Diagnostic*
+  -- を見ていない。1箇所で色が決まるよう、派生先もまとめて当てる
+  local SEVERITIES = {
+    { 'Error', c.red, c.red900, c.red300 },
+    { 'Warn', c.yellow, c.yellow900, c.yellow300 },
+    { 'Info', c.blue, c.blue900, c.blue300 },
+    { 'Hint', c.cyan, c.cyan900, c.cyan300 },
+  }
+
+  for _, s in ipairs(SEVERITIES) do
+    local name, base, dark, bright = s[1], s[2], s[3], s[4]
+    vim.api.nvim_set_hl(0, 'Diagnostic' .. name, { fg = base })
+    vim.api.nvim_set_hl(0, 'DiagnosticSign' .. name, { fg = base })
+    vim.api.nvim_set_hl(0, 'DiagnosticFloating' .. name, { fg = base })
+
+    -- 波線は sp だけ差し替える。undercurl などの指定は iceberg のものを残す
+    local underline = vim.api.nvim_get_hl(0, { name = 'DiagnosticUnderline' .. name, link = false })
+    underline.sp = base
+    vim.api.nvim_set_hl(0, 'DiagnosticUnderline' .. name, underline)
+
+    -- 行末に出す診断の文には地を敷く。本文の中に文が割り込む形なので、
+    -- 色だけだとどこからどこまでが診断なのか分かりにくい。
+    -- 組み合わせは solarized-osaka に倣う（groups/editor.lua）。
+    -- 文字は 500 ではなく 300 を使う。500 だと地とのコントラストが 3.02 で読みづらい
+    vim.api.nvim_set_hl(0, 'DiagnosticVirtualText' .. name, { bg = dark, fg = bright })
+  end
+end
+
 --- 検索の件数（noice が行末に出す `word 1/5`）をマゼンタにする。
 ---
 --- noice は既定で DiagnosticVirtualTextInfo へ回すが、iceberg はそこと String に
@@ -713,6 +758,8 @@ function M.setup()
       vim.schedule(M.match_statusline)
       -- 9. 検索の件数を本文から浮かせる
       M.search_count()
+      -- 10. 診断の色を本文から浮かせる
+      M.diagnostics()
     end,
   })
   -- プラグインが後から記号のハイライトを定義するため、読み込みのたびに当て直す
