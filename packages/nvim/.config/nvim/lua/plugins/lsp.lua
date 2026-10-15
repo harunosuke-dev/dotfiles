@@ -29,6 +29,7 @@ local tools = {
   'stylua', -- Lua の整形
   'shfmt', -- シェルスクリプトの整形
   'shellcheck', -- シェルスクリプトの静的解析（bashls が内部で使う）
+  'sql-formatter', -- SQL の整形
 }
 
 return {

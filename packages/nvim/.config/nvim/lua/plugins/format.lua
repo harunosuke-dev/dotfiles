@@ -6,6 +6,7 @@ local formatters_by_ft = {
   lua = { 'stylua' },
   sh = { 'shfmt' },
   bash = { 'shfmt' },
+  sql = { 'sql_formatter' },
 }
 
 for _, ft in ipairs({
