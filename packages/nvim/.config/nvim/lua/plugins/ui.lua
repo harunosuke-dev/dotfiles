@@ -170,8 +170,14 @@ return {
           return ''
         end
 
+        -- リポジトリ名も頭に付ける。同じ構成の別のリポジトリを並べて開くと、
+        -- ルートからの相対だけでは lua/config/options.lua が二つ並んで区別できない
         local root = vim.fs.root(file, '.git')
-        local shown = root and (vim.fs.relpath(root, file) or file) or vim.fn.fnamemodify(file, ':~')
+        local relative = root and vim.fs.relpath(root, file)
+        local shown = vim.fn.fnamemodify(file, ':~')
+        if relative then
+          shown = vim.fn.fnamemodify(root, ':t') .. '/' .. relative
+        end
         local dir, name = shown:match('^(.*/)([^/]+)$')
         local lock = vim.bo.readonly and ' %#LualinePathLock#󰌾' or ''
 
