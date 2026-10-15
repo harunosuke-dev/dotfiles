@@ -16,8 +16,15 @@ local tabs = {}
 local targets = {}
 
 --- :CodeDiff を呼んでから User CodeDiffOpen が来るまでの間だけ入る。
---- scratch は「差分のタブから呼んだ時に逃げ場として作ったタブ」
+--- scratch は「差分のタブから呼んだ時に逃げ場として作ったタブ」。
+---
+--- WARNING: 変更が無い時の :CodeDiff はセッションを作らず、CodeDiffOpen も来ない。
+--- その場合ここは残り続ける。閉じた時の判断には使わない（下の swapping を使う）
 local pending
+
+--- 開き直しのために古いタブを畳んでいる間だけ立つ。
+--- この閉じは入れ替えの一部なので、ファイラの補いを走らせない
+local swapping = false
 
 --- 常に左端へ置く入口。最初に見るものなので位置を固定する
 local PINNED = 'changes'
@@ -66,9 +73,10 @@ function M.open(entry, cmd, target)
       return true
     end
     -- 入口は同じでも対象が違う。古い方を畳んでから開き直す。
-    -- 先に pending を立てて、閉じた拍子にファイラが出るのを止める
-    pending = { entry = entry }
+    -- 閉じた拍子にファイラが出るのを止める
+    swapping = true
     pcall(vim.cmd, vim.api.nvim_tabpage_get_number(tab) .. 'tabclose')
+    swapping = false
   end
   tabs[entry] = nil
   targets[entry] = target
@@ -139,7 +147,7 @@ function M.setup()
     group = group,
     callback = function()
       -- 別の差分を開く途中の閉じは、入れ替えの一部なので触らない
-      if pending then
+      if swapping then
         return
       end
       vim.schedule(function()
