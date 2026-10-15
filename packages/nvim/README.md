@@ -882,6 +882,10 @@ return {
 
 `lua/plugins/format.lua` の `formatters_by_ft` にファイルタイプとツールを足し、`lua/plugins/lsp.lua` の `tools` にツール名を足す（mason が導入する）。
 
+足した後は、ファイルを 1 つ開いてから `:MasonToolsInstall` を打つ。入ったかは、そのファイルタイプのファイルで `:ConformInfo` を開き、ツールが `ready` かで確かめる。
+
+mason-tool-installer は nvim-lspconfig と一緒に、ファイルを開いたときに読み込まれる。立ち上げの合図（`VimEnter`）はそれより先に来るので、ファイル無しで立ち上げると自動の導入は走らない。
+
 ### 配色を変える
 
 `lua/config/highlights.lua` の `ICEBERG` テーブルを編集する。5段階の明度で構成されている。

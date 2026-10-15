@@ -202,6 +202,7 @@ return {
 
       require('mason-tool-installer').setup({
         ensure_installed = tools,
+        -- 読み込みが VimEnter より後になるので、引数なしで起動すると自動インストールは走らない -> 足したあとは :MasonToolsInstall
         run_on_start = true,
       })
     end,
