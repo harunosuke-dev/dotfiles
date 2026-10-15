@@ -29,6 +29,24 @@ local swapping = false
 --- 常に左端へ置く入口。最初に見るものなので位置を固定する
 local PINNED = 'changes'
 
+--- タブ行に出す名前。
+---
+--- codediff は explorer のバッファ名にタブのハンドルを埋める
+--- （ui/explorer/render.lua の "CodeDiff Explorer [2]"）。バッファ名は重複を
+--- 許されないので、2枚目を開くための措置。ただしハンドルは開き直すたびに
+--- 増えるため、タブ行には意味のない数字が並ぶ。
+---
+--- lualine はタブローカルの tabname があればそちらを名前にする
+--- （components/tabs/tab.lua:42）。入口は分かっているので、それを出す。
+--- バッファ名には触れないので一意性はそのまま
+local LABELS = {
+  changes = 'CodeDiff Changes',
+  ['file-diff'] = 'CodeDiff File Diff',
+  ['file-history'] = 'CodeDiff File History',
+  history = 'CodeDiff History',
+  merge = 'CodeDiff Merge',
+}
+
 --- そのタブが差分を映しているか
 local function shows_diff(tab)
   if not vim.api.nvim_tabpage_is_valid(tab) then
@@ -118,6 +136,9 @@ function M.setup()
       local entry, scratch = pending.entry, pending.scratch
       pending = nil
       tabs[entry] = tab
+      if LABELS[entry] then
+        pcall(vim.api.nvim_tabpage_set_var, tab, 'tabname', LABELS[entry])
+      end
 
       -- 組み立ての最中なので、終わってから畳む
       vim.schedule(function()
