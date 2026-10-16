@@ -423,9 +423,13 @@ vim.api.nvim_create_autocmd('FileType', {
 
     -- j / k で一覧を上下するだけで、対象の位置を隣のウィンドウに追従表示する。
     -- 標準では <CR> を押すまで移動しないため、内容を確かめながら流し読みできない
+    -- nested を付けないと、ここから開いたファイルの BufRead と FileType が
+    -- 発火しない。nvim は autocmd の中から出る autocmd を既定で止めるため、
+    -- まだ開いていないファイルへ飛ぶと filetype が付かず色も構文も無いまま出る
     vim.api.nvim_create_autocmd('CursorMoved', {
       group = qf_group,
       buffer = args.buf,
+      nested = true,
       callback = function()
         if vim.fn.getqflist({ size = 0 }).size == 0 then
           return
