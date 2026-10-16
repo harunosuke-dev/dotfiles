@@ -57,10 +57,14 @@ local function set(group, bg, extra)
 end
 
 --- 色を暗い方へ寄せる。ratio が 0.75 なら 25% 沈む
+--- ratio が 1 より大きければ持ち上げる方に働く。桁溢れしないよう頭を押さえる
 local function dim(color, ratio)
-  local r = math.floor(math.floor(color / 65536) % 256 * ratio)
-  local g = math.floor(math.floor(color / 256) % 256 * ratio)
-  local b = math.floor(color % 256 * ratio)
+  local function channel(value)
+    return math.min(255, math.floor(value % 256 * ratio))
+  end
+  local r = channel(math.floor(color / 65536))
+  local g = channel(math.floor(color / 256))
+  local b = channel(color)
   return r * 65536 + g * 256 + b
 end
 

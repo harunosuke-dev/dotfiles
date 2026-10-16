@@ -510,17 +510,31 @@ vim.api.nvim_create_autocmd('BufWritePre', {
 -- あり、離れた時に一度消すだけでは戻ってしまう。
 --
 -- フロート窓（ピッカー・ホバー）は触らない。プラグイン側の指定を上書きしないため
+--- quickfix の窓がこのタブにあるか。
+--- 一覧と追従先は組で1つの画面なので、追従先にも帯を残す
+local function has_quickfix()
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if vim.bo[vim.api.nvim_win_get_buf(win)].filetype == 'qf' then
+      return true
+    end
+  end
+  return false
+end
+
 local function follow_cursorline()
   local current = vim.api.nvim_get_current_win()
+  -- 一覧をなぞると追従先のカーソルが動く。そこに帯が無いと、
+  -- 今どの行を見ているのかが分からない
+  local quickfix = has_quickfix()
   for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
     if vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_config(win).relative == '' then
       -- 差分モードでは帯そのものを切っている（上の diff_window を参照）
-      vim.wo[win].cursorline = win == current and not vim.wo[win].diff
+      vim.wo[win].cursorline = (win == current or quickfix) and not vim.wo[win].diff
     end
   end
 end
 
-vim.api.nvim_create_autocmd({ 'WinEnter', 'WinNew', 'WinClosed', 'BufWinEnter', 'VimEnter' }, {
+vim.api.nvim_create_autocmd({ 'WinEnter', 'WinNew', 'WinClosed', 'BufWinEnter', 'VimEnter', 'FileType' }, {
   group = augroup('cursorline_focus'),
   callback = vim.schedule_wrap(follow_cursorline),
 })
@@ -543,13 +557,17 @@ vim.api.nvim_create_autocmd({ 'WinEnter', 'WinNew', 'WinClosed', 'BufWinEnter', 
 --- tmux 側は focus-events on が前提（packages/tmux/.config/tmux/tmux.conf）
 local focused = true
 
---- 差分のタブ（codediff）かどうか。
---- ここは explorer と左右の差分が組で1つの画面なので、窓を移るたびに
---- 片方が沈むと読めなくなる。タブごと対象から外す
-local function is_diff_tab()
+--- 一覧と中身が組で1つの画面になっているタブかどうか。
+---
+--- codediff は explorer と左右の差分が組になっている。
+--- quickfix は一覧と追従先が組で、フォーカスは一覧にあっても
+--- 読んでいるのは追従先の方になる。
+--- どちらも窓を移るたびに片方が沈むと読めないので、タブごと対象から外す
+local function is_paired_tab()
   for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
     local buf = vim.api.nvim_win_get_buf(win)
-    if vim.bo[buf].filetype:match('^codediff') then
+    local filetype = vim.bo[buf].filetype
+    if filetype:match('^codediff') or filetype == 'qf' then
       return true
     end
   end
@@ -559,7 +577,7 @@ end
 local function dim_inactive_windows()
   -- 名前空間は iceberg 用にしか作らない。テーマ側に同じ仕組み
   -- （kanagawa の dimInactive）があるものはそちらに任せる
-  local enabled = vim.g.colors_name == 'iceberg' and not is_diff_tab()
+  local enabled = vim.g.colors_name == 'iceberg' and not is_paired_tab()
   local ns = require('config.highlights').inactive_ns()
   local current = vim.api.nvim_get_current_win()
   for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
