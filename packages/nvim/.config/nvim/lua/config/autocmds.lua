@@ -418,8 +418,28 @@ vim.api.nvim_create_autocmd('FileType', {
     vim.keymap.set('n', '<CR>', '<CR>', { buffer = args.buf, remap = false, desc = 'Jump to the entry' })
 
     -- q で閉じる。未割り当てだと q がマクロ記録の開始になり、
-    -- 一覧を閉じたつもりで記録が始まる事故が起きる
-    vim.keymap.set('n', 'q', '<cmd>cclose<CR>', { buffer = args.buf, desc = 'Close the list' })
+    -- 一覧を閉じたつもりで記録が始まる事故が起きる。
+    --
+    -- 一覧は quicker によって編集可能になっている（lua/plugins/diagnostics.lua）。
+    -- 書きかけのまま閉じると黙って消えるので、その時だけ止める
+    vim.keymap.set('n', 'q', function()
+      if vim.bo.modified then
+        vim.notify('一覧に未反映の変更がある。:w で反映、:q! で捨てる', vim.log.levels.WARN)
+        return
+      end
+      vim.cmd('cclose')
+    end, { buffer = args.buf, desc = 'Close the list' })
+
+    -- 一覧の窓でジャンプ履歴を辿らせない。
+    --
+    -- 素の挙動では、その窓に履歴の先のファイルが読み込まれる。
+    -- 一覧が消えて、小さな窓にファイルだけが残る形になる。
+    -- 履歴を辿るのは <CR> で飛んだ先でする
+    for _, key in ipairs({ '<C-o>', '<C-i>' }) do
+      vim.keymap.set('n', key, function()
+        vim.notify('一覧では使えない。<CR> で飛んでから押す', vim.log.levels.WARN)
+      end, { buffer = args.buf, desc = 'Not available in the list' })
+    end
 
     -- j / k で一覧を上下するだけで、対象の位置を隣のウィンドウに追従表示する。
     -- 標準では <CR> を押すまで移動しないため、内容を確かめながら流し読みできない
