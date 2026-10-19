@@ -1,13 +1,15 @@
 ###########################################################
 # 修飾キーの方針
 #
-#   alt + shift    見るものを変える（フォーカス・レイアウト・アプリ起動）
-#   ctrl + alt     ウィンドウを動かす（warp・ディスプレイ送り・挿入方向）
+#   alt + shift         見るものを変える（フォーカス・レイアウト・ランチャー）
+#   ctrl + alt          ウィンドウを動かす（warp・ディスプレイ送り・挿入方向）
+#   ctrl + alt + cmd    アプリを起動する
 #
 # 同じ hjkl に対して修飾キーだけを変える。タイル型ウィンドウマネージャの
 # 慣習（focus と move を同じ方向キーで揃える）に沿っている。
 #
-# cmd 系は一切使わない。ランチャーなど他の用途のために空けておく。
+# cmd はアプリ起動の 3 修飾キーでだけ使う。
+# 右 cmd は F18 に変えて Hammerspoon が使っているため、左 cmd で押す。
 #
 # alt 単独にも何も割り当てない。skhd は OS 全体でキーを横取りするため、
 # 割り当てると端末側に届かなくなる。実際に以下が潰れていた。
@@ -109,11 +111,15 @@ alt + shift - m : yabai -m space --toggle mission-control
 # Applications
 ###########################################################
 
-alt + shift - return : open /Applications/Ghostty.app
-# Alt + Shift + \ （0x2A）
-alt + shift - 0x2A : open /Applications/Google\ Chrome.app
-alt + shift - 0 : open /Applications/Brave\ Browser.app
-alt + shift - n : open /Applications/Notion.app
+# 置き場所がばらばらなため、パスではなくアプリ名で開く
+ctrl + alt + cmd - return : open -a Ghostty
+# Ctrl + Alt + Cmd + \ （0x2A）
+ctrl + alt + cmd - 0x2A : open -a "Google Chrome"
+ctrl + alt + cmd - 0 : open -a "Brave Browser"
+# Chrome でインストールした GitHub のウェブアプリ
+ctrl + alt + cmd - g : open -a GitHub
+ctrl + alt + cmd - m : open -a Music
+ctrl + alt + cmd - f : open -a Finder
 
 ###########################################################
 # Launcher（Alfred）
