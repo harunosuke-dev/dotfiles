@@ -577,6 +577,17 @@ function M.diagnostics()
   end
 end
 
+--- quickfix で選んでいる行から文字色を外す。
+---
+--- QuickFixLine は帯の色と一緒に文字色も持っている。そのため選択中の行だけ
+--- 本文の構文の色が上書きされ、一色に潰れる。帯だけ残せば色が透ける
+function M.quickfix_line()
+  local current = vim.api.nvim_get_hl(0, { name = 'QuickFixLine', link = false })
+  if current.bg then
+    vim.api.nvim_set_hl(0, 'QuickFixLine', { bg = current.bg })
+  end
+end
+
 --- 検索の件数（noice が行末に出す `word 1/5`）をマゼンタにする。
 ---
 --- noice は既定で DiagnosticVirtualTextInfo へ回すが、iceberg はそこと String に
@@ -764,6 +775,8 @@ function M.setup()
       M.search_count()
       -- 10. 診断の色を本文から浮かせる
       M.diagnostics()
+      -- 11. quickfix の選択行から文字色を外す
+      M.quickfix_line()
     end,
   })
   -- プラグインが後から記号のハイライトを定義するため、読み込みのたびに当て直す
