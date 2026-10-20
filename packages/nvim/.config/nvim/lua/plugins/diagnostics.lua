@@ -63,6 +63,41 @@ return {
     },
   },
 
+  -- quickfix の一覧に色を付ける。
+  --
+  -- nvim の syntax/qf.vim は本文に色を指定していない。grep の結果は1行の大半が
+  -- 本文なので、ほぼ白一色になる。行ごとに元のファイルの言語が違うため、
+  -- 構文ファイルの上書きでは解けない。
+  --
+  -- 窓は quickfix のままなので、j / k の追従も q も ]q も今の設定が効く。
+  --
+  -- 一覧をそのまま編集して元のファイルへ反映できる。素の quickfix は
+  -- nomodifiable で、直すには <CR> で本文へ飛ぶ必要がある。
+  --
+  -- 書き戻す先はバッファで、ディスクには触らない（autosave = false）。
+  -- 反映を見てから自分で保存する。行ごとに「記録時と同じ中身か」を照合し、
+  -- 違えばその行だけ拒んで理由を一覧に差し込む。
+  --
+  -- 一括置換そのものは <Space>rr（grug-far）と :cdo でもできる。
+  -- ここの取り柄は、今見ている一覧を行ごとに不揃いに直せること
+  {
+    'stevearc/quicker.nvim',
+    ft = 'qf',
+    opts = {
+      edit = { enabled = true, autosave = false },
+      -- 追従は lua/config/autocmds.lua の CursorMoved で既に作ってある
+      follow = { enabled = false },
+      highlight = {
+        treesitter = true,
+        lsp = true,
+        -- 一覧に出たファイルをバッファへ読み込んでから色を付ける。
+        -- 読み込まないと1行だけを切り出して解析するため、文脈が要る色が落ちる。
+        -- LSP のセマンティックトークンも読み込み済みのバッファからしか取れない
+        load_buffers = true,
+      },
+    },
+  },
+
   -- 診断・シンボル・検索結果を、閉じずに置いておける一覧として表示する。
   {
     'folke/trouble.nvim',
