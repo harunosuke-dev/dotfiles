@@ -308,8 +308,17 @@ return {
               },
               -- タブの区切り。lualine の separator は今いるタブの両隣だけ
               -- section_separators 側に回るため、位置によって出たり消えたりする
-              -- （tabs/tab.lua の separator_before）。名前の頭に付けて揃える
+              -- （tabs/tab.lua の separator_before）。名前の頭に付けて揃える。
+              --
+              -- ファイラのタブには名前が付かない。oil のバッファ名は
+              -- oil:///path/to/dir/ で末尾が / のため、path = 0（ファイル名だけ）
+              -- では空になる。番号だけが並ぶので、どの場所を開いているか分からない。
+              -- 渡ってくる name は「番号 + 空の名前」なので、後ろに足せばよい
               fmt = function(name, tab)
+                if tab.filetype == 'oil' then
+                  local dir = tab.file:gsub('^oil://', ''):gsub('/+$', '')
+                  name = name .. 'Explorer ' .. vim.fn.fnamemodify(dir, ':t')
+                end
                 return tab.last and name or name .. ' │'
               end,
               -- 区切り線を名前の末尾に付けているので、右の余白は要らない
