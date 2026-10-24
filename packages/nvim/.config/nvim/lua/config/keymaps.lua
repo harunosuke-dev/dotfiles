@@ -65,7 +65,20 @@ map('n', '<C-w>z', zoom, { desc = 'Zoom toggle, like tmux' })
 --
 -- 移動は入れない。素の gt / gT で足り、<C-w>gt / <C-w>gT も同じ働きを持つ。
 -- <leader><Tab>m は組み込みの <C-w>T の別名。あちらは Shift が要る
-map('n', '<leader><Tab><Tab>', '<cmd>tabnew<CR>', { desc = 'New tab page' })
+--
+-- 新しいタブはファイラから始める。空のバッファだと、結局そこから
+-- <Space>ff や <Space>e を押すことになる。
+--
+-- 開く場所は今のファイルの隣。別の仕事を始めるにしても、近くから辿ることが多い。
+-- 名前の無いバッファ（起動直後など）では cwd になる。
+--
+-- tabnew してから Oil を開くと、tabnew が作った無名バッファが一覧に残る。
+-- tabedit にディレクトリを渡せば oil が直接その窓を持つ
+map('n', '<leader><Tab><Tab>', function()
+  local file = vim.api.nvim_buf_get_name(0)
+  local dir = file ~= '' and vim.fn.fnamemodify(file, ':p:h') or vim.fn.getcwd()
+  vim.cmd('tabedit ' .. vim.fn.fnameescape(dir))
+end, { desc = 'New tab page with the file browser' })
 map('n', '<leader><Tab>d', '<cmd>tabclose<CR>', { desc = '[D]elete this tab page' })
 map('n', '<leader><Tab>o', '<cmd>tabonly<CR>', { desc = '[O]nly : close the other tab pages' })
 map('n', '<leader><Tab>m', '<C-w>T', { desc = '[M]ove this window to a new tab page' })
