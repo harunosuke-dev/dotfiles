@@ -22,218 +22,289 @@ local function is_ascii_context()
 end
 
 return {
-  'saghen/blink.cmp',
-  -- タグ付きリリースにはビルド済みの Rust バイナリが同梱される。
-  -- ブランチ指定にすると手元で cargo build が必要になるのでバージョン指定にする
-  version = '1.*',
-  -- CmdlineEnter を必ず含める。InsertEnter だけだと、一度も挿入モードに入って
-  -- いない状態では blink.cmp 自体が未ロードで、: や / の補完が Neovim 内蔵の
-  -- wildmenu にフォールバックしてしまう
-  event = { 'InsertEnter', 'CmdlineEnter' },
-  dependencies = { 'folke/lazydev.nvim' },
-  opts = {
-    -- zsh の auto-suggestion と同じ操作感にする。
-    -- Tab = 候補があれば確定 / スニペットの穴があれば次へ / どちらも無ければインデント
-    -- <C-n> <C-p> または ↑ ↓ で候補移動、<C-e> で取り消し、<C-k> でシグネチャ表示
-    keymap = {
-      preset = 'super-tab',
-      -- スニペットの穴を Enter でも渡れるようにする。
-      --
-      -- super-tab の Tab はスニペット中だと accept() を先に試す作りで、
-      -- 値を打った拍子に補完メニューが開いていると、そちらの確定に取られて
-      -- 次の穴へ進めない。Enter は super-tab が使っていないので割り当てる。
-      --
-      -- 穴が残っていない時は nvim-autopairs の <CR>（括弧を開いて改行）へ
-      -- 渡すため、fallback ではなく fallback_to_mappings を使う
-      ['<CR>'] = { 'snippet_forward', 'fallback_to_mappings' },
-
-      -- ポップアップを出していない時でも候補を送れるようにする。
-      --
-      -- blink の can_select はメニューが閉じていると素通りする作りで、
-      -- on_ghost_text を渡した時だけゴーストテキスト表示中の移動を許す。
-      -- 既定の割り当ては渡していないため、文章のファイル（自動ポップアップ
-      -- なし）で <C-n> / <C-p> が効かなかった
-      ['<C-n>'] = {
-        function(cmp)
-          return cmp.select_next({ on_ghost_text = true })
-        end,
-        'fallback_to_mappings',
-      },
-      ['<C-p>'] = {
-        function(cmp)
-          return cmp.select_prev({ on_ghost_text = true })
-        end,
-        'fallback_to_mappings',
-      },
-      ['<Down>'] = {
-        function(cmp)
-          return cmp.select_next({ on_ghost_text = true })
-        end,
-        'fallback',
-      },
-      ['<Up>'] = {
-        function(cmp)
-          return cmp.select_prev({ on_ghost_text = true })
-        end,
-        'fallback',
-      },
-      -- 挿入モードのカーソル移動を優先する。
-      --
-      -- super-tab preset は <C-b> / <C-f> をドキュメント窓のスクロールに使うが、
-      -- こちらは lua/config/keymaps.lua で1文字ぶんの移動に割り当てている。
-      -- documentation.auto_show が有効で候補を選ぶたびに窓が出るため、その間
-      -- 移動が効かなくなっていた。空テーブルを渡すとプリセットの割り当てを
-      -- 無効化できる（keymap/init.lua:35）。
-      --
-      -- メニューを出したまま横へ動きたい時はそのまま動いて閉じるのが自然で、
-      -- 長い説明はノーマルモードの K（hover）で読める
-      ['<C-b>'] = {},
-      ['<C-f>'] = {},
-
-      -- スニペットだけを一覧表示する。名前をうろ覚えのまま呼び出せる。
-      -- 通常の補完は英数字を打った時にしか出ず、混ざると探しづらいため分ける
-      ['<C-l>'] = {
-        function(cmp)
-          cmp.show({ providers = { 'snippets' } })
-        end,
-        'fallback',
-      },
+  -- 入力を待たずに続きを薄く出す AI 補完。
+  --
+  -- blink のゴーストテキストは「打った文字で絞った候補の1件目」なので、
+  -- 何も打っていない状態では出しようがない。こちらは文脈から続きを予測する。
+  --
+  -- 無料枠は :SupermavenUseFree で有効になる。アカウント登録が要るのは Pro のみ
+  {
+    'supermaven-inc/supermaven-nvim',
+    event = 'InsertEnter',
+    -- 挿入モードに入るまで読み込まれないため、それまで :Supermaven* が
+    -- 存在しない。無料枠の有効化（:SupermavenUseFree）は起動直後に打ちたいので、
+    -- コマンドでも読み込めるようにする
+    cmd = {
+      'SupermavenUseFree',
+      'SupermavenUsePro',
+      'SupermavenLogout',
+      'SupermavenStatus',
+      'SupermavenToggle',
+      'SupermavenStart',
+      'SupermavenStop',
+      'SupermavenRestart',
+      'SupermavenShowLog',
+      'SupermavenClearLog',
     },
+    opts = {
+      -- 既定の割り当ては <Tab> と <C-j> で、どちらも埋まっている
+      -- （<Tab> は blink、<C-j> はコマンドラインの候補送り）。自分で張る
+      disable_keymaps = true,
 
-    appearance = { nerd_font_variant = 'mono' },
+      -- 出すのをやめる条件。true を返すと止まる。
+      --
+      --   1. 日本語を打っている最中。blink の判定と揃える
+      --   2. blink のメニューが開いている間。薄い文字と候補窓が場所を取り合う
+      condition = function()
+        if not is_ascii_context() then
+          return true
+        end
+        local ok, blink = pcall(require, 'blink.cmp')
+        return ok and blink.is_visible()
+      end,
 
-    completion = {
-      documentation = { auto_show = true, auto_show_delay_ms = 200 },
-
-      -- 打つそばから1件目が自動選択され、確定後の姿が行内に薄く出る。
-      -- auto_insert は false のまま（true にすると候補を移動しただけで
-      -- バッファに実際の文字が入ってしまい、ゴーストテキストと役割が重複する）
-      ghost_text = {
-        -- 日本語を打っている間は出さない。
-        --
-        -- 日本語には語の区切りが無いので buffer ソースが延々と候補を返し、
-        -- 確定するそばから行内に薄い文字が割り込んでくる。IME の変換候補とも
-        -- 場所を取り合う。コードを書いている間は今までどおり出す。
-        --
-        -- enabled は draw_preview() の中で毎回評価されるため、カーソル位置を
-        -- 見て切り替えられる（blink.cmp の completion/windows/ghost_text/init.lua）
-        enabled = is_ascii_context,
-        -- メニューを開いていなくても、選択が無くても1件目を薄く出す
-        show_without_selection = true,
-        show_without_menu = true,
-      },
-      menu = {
-        border = 'rounded',
-        -- 候補の移動はキーボードで行うため不要。
-        -- つまみが背景色つきの別ウィンドウとして重なり、右上に四角く見えていた
-        scrollbar = false,
-
-        -- 日本語を打っている間だけ自動で出さない。
-        -- 区切りが無いので、1文字ごとに文がまるごと候補になってしまう
-        auto_show = is_ascii_context,
-      },
-      list = { selection = { preselect = true, auto_insert = false } },
+      log_level = 'warn',
     },
+    config = function(_, opts)
+      require('supermaven-nvim').setup(opts)
 
-    -- コマンドライン（: や /）の補完。既定でも有効だが、候補一覧は Tab を
-    -- 押すまで出ない設定になっている。挿入モードと操作感を揃えて自動表示にする
-    cmdline = {
+      -- 受け入れは <M-l>。挿入モードで空いており、Ghostty は
+      -- macos-option-as-alt = true なので届く。
+      -- 1語だけ取り込む <M-Right> は、予測が途中まで合っている時に使う。
+      --
+      -- NOTE: Ghostty は既定で Option + 矢印を esc:f / esc:b へ変換しており、
+      -- そのままでは届かなかった。変換を外してある
+      -- （packages/ghostty/.config/ghostty/config の keybind）
+      local preview = require('supermaven-nvim.completion_preview')
+      vim.keymap.set('i', '<M-l>', preview.on_accept_suggestion, { desc = 'Accept the AI suggestion' })
+      vim.keymap.set('i', '<M-Right>', preview.on_accept_suggestion_word, { desc = 'Accept one word of it' })
+
+      -- 薄さは blink のゴーストテキストと揃える
+      local function set_hl()
+        vim.api.nvim_set_hl(0, 'SupermavenSuggestion', { link = 'Comment' })
+      end
+      vim.api.nvim_create_autocmd('ColorScheme', {
+        group = vim.api.nvim_create_augroup('user_supermaven_hl', { clear = true }),
+        callback = set_hl,
+      })
+      set_hl()
+    end,
+  },
+
+  {
+    'saghen/blink.cmp',
+    -- タグ付きリリースにはビルド済みの Rust バイナリが同梱される。
+    -- ブランチ指定にすると手元で cargo build が必要になるのでバージョン指定にする
+    version = '1.*',
+    -- CmdlineEnter を必ず含める。InsertEnter だけだと、一度も挿入モードに入って
+    -- いない状態では blink.cmp 自体が未ロードで、: や / の補完が Neovim 内蔵の
+    -- wildmenu にフォールバックしてしまう
+    event = { 'InsertEnter', 'CmdlineEnter' },
+    dependencies = { 'folke/lazydev.nvim' },
+    opts = {
+      -- zsh の auto-suggestion と同じ操作感にする。
+      -- Tab = 候補があれば確定 / スニペットの穴があれば次へ / どちらも無ければインデント
+      -- <C-n> <C-p> または ↑ ↓ で候補移動、<C-e> で取り消し、<C-k> でシグネチャ表示
       keymap = {
-        preset = 'cmdline',
-        -- プリセットは左右キーで候補を移動する割り当てだが直感的でないため、
-        -- 上下キーと <C-j> / <C-k> を追加する。
-        -- fallback を付けているので、候補が出ていない時は本来の動作
-        -- （上下 = コマンド履歴の遡り）がそのまま働く
-        ['<Up>'] = { 'select_prev', 'fallback' },
-        ['<Down>'] = { 'select_next', 'fallback' },
-        ['<C-k>'] = { 'select_prev', 'fallback' },
-        ['<C-j>'] = { 'select_next', 'fallback' },
-      },
-      completion = {
-        menu = { auto_show = true },
-        ghost_text = { enabled = true },
-        -- 既定の preselect = true だと1件目が最初から選択済みになり、
-        -- Tab の「候補を選ぶ」処理が不成立になって2件目へ飛んでしまう。
-        -- false にすることで、1回目の Tab で1件目が選ばれる
-        list = { selection = { preselect = false, auto_insert = true } },
-      },
-    },
+        preset = 'super-tab',
+        -- スニペットの穴を Enter でも渡れるようにする。
+        --
+        -- super-tab の Tab はスニペット中だと accept() を先に試す作りで、
+        -- 値を打った拍子に補完メニューが開いていると、そちらの確定に取られて
+        -- 次の穴へ進めない。Enter は super-tab が使っていないので割り当てる。
+        --
+        -- 穴が残っていない時は nvim-autopairs の <CR>（括弧を開いて改行）へ
+        -- 渡すため、fallback ではなく fallback_to_mappings を使う
+        ['<CR>'] = { 'snippet_forward', 'fallback_to_mappings' },
 
-    signature = { enabled = true, window = { border = 'rounded' } },
-
-    -- Neovim 標準の vim.snippet を使う。LuaSnip は入れない
-    snippets = { preset = 'default' },
-
-    sources = {
-      default = { 'lsp', 'path', 'snippets', 'buffer', 'lazydev', 'math' },
-      providers = {
-        -- 数式定義の id を補完する。blog の public/math-index.json を直接読むので、
-        -- 定義を増やしても再生成が要らない。
-        -- <MathReference id=" の内側にいる時だけ候補を出す
-        math = {
-          name = 'Math',
-          module = 'config.math_source',
+        -- ポップアップを出していない時でも候補を送れるようにする。
+        --
+        -- blink の can_select はメニューが閉じていると素通りする作りで、
+        -- on_ghost_text を渡した時だけゴーストテキスト表示中の移動を許す。
+        -- 既定の割り当ては渡していないため、文章のファイル（自動ポップアップ
+        -- なし）で <C-n> / <C-p> が効かなかった
+        ['<C-n>'] = {
+          function(cmp)
+            return cmp.select_next({ on_ghost_text = true })
+          end,
+          'fallback_to_mappings',
         },
-        snippets = {
-          opts = {
-            -- friendly-snippets の既製スニペットは読み込まない。
-            -- <config>/snippets/ に置いた自作分だけを候補に出す
-            friendly_snippets = false,
-            -- ファイル名がそのまま filetype キーになる（typescriptreact.json など）。
-            -- all.json は全ファイルタイプで有効
-            search_paths = { vim.fn.stdpath('config') .. '/snippets' },
-            -- 継承関係。tsx を書いている時に typescript / javascript の分も出す
-            extended_filetypes = {
-              typescript = { 'javascript' },
-              typescriptreact = { 'typescript', 'javascript' },
-              javascriptreact = { 'javascript' },
-              mdx = { 'markdown' },
-              scss = { 'css' },
+        ['<C-p>'] = {
+          function(cmp)
+            return cmp.select_prev({ on_ghost_text = true })
+          end,
+          'fallback_to_mappings',
+        },
+        ['<Down>'] = {
+          function(cmp)
+            return cmp.select_next({ on_ghost_text = true })
+          end,
+          'fallback',
+        },
+        ['<Up>'] = {
+          function(cmp)
+            return cmp.select_prev({ on_ghost_text = true })
+          end,
+          'fallback',
+        },
+        -- 挿入モードのカーソル移動を優先する。
+        --
+        -- super-tab preset は <C-b> / <C-f> をドキュメント窓のスクロールに使うが、
+        -- こちらは lua/config/keymaps.lua で1文字ぶんの移動に割り当てている。
+        -- documentation.auto_show が有効で候補を選ぶたびに窓が出るため、その間
+        -- 移動が効かなくなっていた。空テーブルを渡すとプリセットの割り当てを
+        -- 無効化できる（keymap/init.lua:35）。
+        --
+        -- メニューを出したまま横へ動きたい時はそのまま動いて閉じるのが自然で、
+        -- 長い説明はノーマルモードの K（hover）で読める
+        ['<C-b>'] = {},
+        ['<C-f>'] = {},
+
+        -- スニペットだけを一覧表示する。名前をうろ覚えのまま呼び出せる。
+        -- 通常の補完は英数字を打った時にしか出ず、混ざると探しづらいため分ける
+        ['<C-l>'] = {
+          function(cmp)
+            cmp.show({ providers = { 'snippets' } })
+          end,
+          'fallback',
+        },
+      },
+
+      appearance = { nerd_font_variant = 'mono' },
+
+      completion = {
+        documentation = { auto_show = true, auto_show_delay_ms = 200 },
+
+        -- 打つそばから1件目が自動選択され、確定後の姿が行内に薄く出る。
+        -- auto_insert は false のまま（true にすると候補を移動しただけで
+        -- バッファに実際の文字が入ってしまい、ゴーストテキストと役割が重複する）
+        ghost_text = {
+          -- 日本語を打っている間は出さない。
+          --
+          -- 日本語には語の区切りが無いので buffer ソースが延々と候補を返し、
+          -- 確定するそばから行内に薄い文字が割り込んでくる。IME の変換候補とも
+          -- 場所を取り合う。コードを書いている間は今までどおり出す。
+          --
+          -- enabled は draw_preview() の中で毎回評価されるため、カーソル位置を
+          -- 見て切り替えられる（blink.cmp の completion/windows/ghost_text/init.lua）
+          enabled = is_ascii_context,
+          -- メニューを開いていなくても、選択が無くても1件目を薄く出す
+          show_without_selection = true,
+          show_without_menu = true,
+        },
+        menu = {
+          border = 'rounded',
+          -- 候補の移動はキーボードで行うため不要。
+          -- つまみが背景色つきの別ウィンドウとして重なり、右上に四角く見えていた
+          scrollbar = false,
+
+          -- 日本語を打っている間だけ自動で出さない。
+          -- 区切りが無いので、1文字ごとに文がまるごと候補になってしまう
+          auto_show = is_ascii_context,
+        },
+        list = { selection = { preselect = true, auto_insert = false } },
+      },
+
+      -- コマンドライン（: や /）の補完。既定でも有効だが、候補一覧は Tab を
+      -- 押すまで出ない設定になっている。挿入モードと操作感を揃えて自動表示にする
+      cmdline = {
+        keymap = {
+          preset = 'cmdline',
+          -- プリセットは左右キーで候補を移動する割り当てだが直感的でないため、
+          -- 上下キーと <C-j> / <C-k> を追加する。
+          -- fallback を付けているので、候補が出ていない時は本来の動作
+          -- （上下 = コマンド履歴の遡り）がそのまま働く
+          ['<Up>'] = { 'select_prev', 'fallback' },
+          ['<Down>'] = { 'select_next', 'fallback' },
+          ['<C-k>'] = { 'select_prev', 'fallback' },
+          ['<C-j>'] = { 'select_next', 'fallback' },
+        },
+        completion = {
+          menu = { auto_show = true },
+          ghost_text = { enabled = true },
+          -- 既定の preselect = true だと1件目が最初から選択済みになり、
+          -- Tab の「候補を選ぶ」処理が不成立になって2件目へ飛んでしまう。
+          -- false にすることで、1回目の Tab で1件目が選ばれる
+          list = { selection = { preselect = false, auto_insert = true } },
+        },
+      },
+
+      signature = { enabled = true, window = { border = 'rounded' } },
+
+      -- Neovim 標準の vim.snippet を使う。LuaSnip は入れない
+      snippets = { preset = 'default' },
+
+      sources = {
+        default = { 'lsp', 'path', 'snippets', 'buffer', 'lazydev', 'math' },
+        providers = {
+          -- 数式定義の id を補完する。blog の public/math-index.json を直接読むので、
+          -- 定義を増やしても再生成が要らない。
+          -- <MathReference id=" の内側にいる時だけ候補を出す
+          math = {
+            name = 'Math',
+            module = 'config.math_source',
+          },
+          snippets = {
+            opts = {
+              -- friendly-snippets の既製スニペットは読み込まない。
+              -- <config>/snippets/ に置いた自作分だけを候補に出す
+              friendly_snippets = false,
+              -- ファイル名がそのまま filetype キーになる（typescriptreact.json など）。
+              -- all.json は全ファイルタイプで有効
+              search_paths = { vim.fn.stdpath('config') .. '/snippets' },
+              -- 継承関係。tsx を書いている時に typescript / javascript の分も出す
+              extended_filetypes = {
+                typescript = { 'javascript' },
+                typescriptreact = { 'typescript', 'javascript' },
+                javascriptreact = { 'javascript' },
+                mdx = { 'markdown' },
+                scss = { 'css' },
+              },
             },
           },
-        },
-        -- cssls と css_variables は、どちらも var(--x) の候補を返す。
-        -- cssls が拾うのは同じファイル内の定義だけで、css_variables の結果に必ず含まれる。
-        -- css_variables が付いている間は cssls の変数候補を落とす
-        lsp = {
-          transform_items = function(ctx, items)
-            local bufnr = ctx and ctx.bufnr or 0
-            if #vim.lsp.get_clients({ bufnr = bufnr, name = 'css_variables' }) == 0 then
-              return items
-            end
-            return vim.tbl_filter(function(item)
-              local client = item.client_id and vim.lsp.get_client_by_id(item.client_id)
-              return not (client and client.name == 'cssls' and vim.startswith(item.label, '--'))
-            end, items)
-          end,
-        },
-        -- Lua 設定ファイルを編集している時だけ Neovim API の補完を最優先で出す
-        lazydev = {
-          name = 'LazyDev',
-          module = 'lazydev.integrations.blink',
-          score_offset = 100,
+          -- cssls と css_variables は、どちらも var(--x) の候補を返す。
+          -- cssls が拾うのは同じファイル内の定義だけで、css_variables の結果に必ず含まれる。
+          -- css_variables が付いている間は cssls の変数候補を落とす
+          lsp = {
+            transform_items = function(ctx, items)
+              local bufnr = ctx and ctx.bufnr or 0
+              if #vim.lsp.get_clients({ bufnr = bufnr, name = 'css_variables' }) == 0 then
+                return items
+              end
+              return vim.tbl_filter(function(item)
+                local client = item.client_id and vim.lsp.get_client_by_id(item.client_id)
+                return not (client and client.name == 'cssls' and vim.startswith(item.label, '--'))
+              end, items)
+            end,
+          },
+          -- Lua 設定ファイルを編集している時だけ Neovim API の補完を最優先で出す
+          lazydev = {
+            name = 'LazyDev',
+            module = 'lazydev.integrations.blink',
+            score_offset = 100,
+          },
         },
       },
+
+      fuzzy = { implementation = 'prefer_rust_with_warning' },
     },
+    opts_extend = { 'sources.default' },
 
-    fuzzy = { implementation = 'prefer_rust_with_warning' },
+    init = function()
+      -- BlinkCmpGhostText は既定で NonText にリンクされる。iceberg の NonText は
+      -- #252941 で、背景 #161822 とのコントラスト比が約 1.1:1 しかなく実質見えない。
+      -- Comment (#6c7189 / 約 3.7:1) に張り替える。
+      -- blink 側は default = true で設定するため、先に定義しておけば上書きされない。
+      -- :colorscheme でハイライトは一度消えるので ColorScheme でも張り直す
+      local function set_ghost_text_hl()
+        vim.api.nvim_set_hl(0, 'BlinkCmpGhostText', { link = 'Comment' })
+      end
+
+      vim.api.nvim_create_autocmd('ColorScheme', {
+        group = vim.api.nvim_create_augroup('user_blink_ghost_text', { clear = true }),
+        callback = set_ghost_text_hl,
+      })
+      set_ghost_text_hl()
+    end,
   },
-  opts_extend = { 'sources.default' },
-
-  init = function()
-    -- BlinkCmpGhostText は既定で NonText にリンクされる。iceberg の NonText は
-    -- #252941 で、背景 #161822 とのコントラスト比が約 1.1:1 しかなく実質見えない。
-    -- Comment (#6c7189 / 約 3.7:1) に張り替える。
-    -- blink 側は default = true で設定するため、先に定義しておけば上書きされない。
-    -- :colorscheme でハイライトは一度消えるので ColorScheme でも張り直す
-    local function set_ghost_text_hl()
-      vim.api.nvim_set_hl(0, 'BlinkCmpGhostText', { link = 'Comment' })
-    end
-
-    vim.api.nvim_create_autocmd('ColorScheme', {
-      group = vim.api.nvim_create_augroup('user_blink_ghost_text', { clear = true }),
-      callback = set_ghost_text_hl,
-    })
-    set_ghost_text_hl()
-  end,
 }
