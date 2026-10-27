@@ -200,6 +200,10 @@ return {
         },
       })
 
+      -- TS 7 の言語サーバ。mason の package ではなく、プロジェクトの node_modules の tsc を使うので、
+      -- servers に入れず、ここで有効にする（servers に入れると mason が入れようとして失敗する）
+      vim.lsp.enable('tsc')
+
       require('mason-tool-installer').setup({
         ensure_installed = tools,
         -- 読み込みが VimEnter より後になるので、引数なしで起動すると自動インストールは走らない -> 足したあとは :MasonToolsInstall

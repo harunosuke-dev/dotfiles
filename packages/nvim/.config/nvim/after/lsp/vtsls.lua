@@ -8,7 +8,34 @@ local inlay_hints = {
   enumMemberValues = { enabled = true },
 }
 
+-- プロジェクトの TypeScript の major を返す。入っていなければ nil
+local function typescript_major(root)
+  local path = vim.fs.joinpath(root, 'node_modules/typescript/package.json')
+  if not vim.uv.fs_stat(path) then
+    return nil
+  end
+  local ok, pkg = pcall(vim.json.decode, table.concat(vim.fn.readfile(path), '\n'))
+  if not ok or type(pkg.version) ~= 'string' then
+    return nil
+  end
+  local version = vim.version.parse(pkg.version)
+  return version and version.major
+end
+
 return {
+  -- TS 7 のプロジェクトでは付かない。
+  -- vtsls はプロジェクトの tsserver を使うが、TS 7 には無く、vtsls 同梱の TS で型を見てしまう。
+  -- TS 7 では、TS 7 の tsc 自身が言語サーバになるので、そちら（lsp/tsc.lua）に任せる。
+  -- NOTE: nvim-lspconfig の root_dir を丸ごと置き換えている。deno を除く判定は省いた（deno を使っていないため）
+  root_dir = function(bufnr, on_dir)
+    local markers = { { 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lockb', 'bun.lock' }, { '.git' } }
+    local root = vim.fs.root(bufnr, markers) or vim.fn.getcwd()
+    local major = typescript_major(root)
+    if major and major >= 7 then
+      return
+    end
+    on_dir(root)
+  end,
   settings = {
     typescript = {
       inlayHints = inlay_hints,
