@@ -51,18 +51,6 @@ return {
       -- （<Tab> は blink、<C-j> はコマンドラインの候補送り）。自分で張る
       disable_keymaps = true,
 
-      -- 出すのをやめる条件。true を返すと止まる。
-      --
-      --   1. 日本語を打っている最中。blink の判定と揃える
-      --   2. blink のメニューが開いている間。薄い文字と候補窓が場所を取り合う
-      condition = function()
-        if not is_ascii_context() then
-          return true
-        end
-        local ok, blink = pcall(require, 'blink.cmp')
-        return ok and blink.is_visible()
-      end,
-
       log_level = 'warn',
     },
     config = function(_, opts)
@@ -78,6 +66,39 @@ return {
       local preview = require('supermaven-nvim.completion_preview')
       vim.keymap.set('i', '<M-l>', preview.on_accept_suggestion, { desc = 'Accept the AI suggestion' })
       vim.keymap.set('i', '<M-Right>', preview.on_accept_suggestion_word, { desc = 'Accept one word of it' })
+
+      -- 出さない場面を打つたびに切り替える。
+      --
+      --   1. 日本語を打っている最中。blink の判定と揃える
+      --   2. blink のメニューが開いている間。薄い文字と候補窓が場所を取り合う
+      --
+      -- WARNING: 設定の condition は使えない。BufEnter でしか評価されず
+      -- （document_listener.lua:30）、打っている最中は見直されない。
+      -- 描画のたびに読まれる disable_inline_completion を直に切り替える
+      -- （completion_preview.lua:61,75）
+      local menu_open = false
+
+      local function sync()
+        local off = menu_open or not is_ascii_context()
+        if off and not preview.disable_inline_completion then
+          preview:dispose_inlay()
+        end
+        preview.disable_inline_completion = off
+      end
+
+      vim.api.nvim_create_autocmd({ 'TextChangedI', 'CursorMovedI', 'InsertEnter' }, {
+        group = vim.api.nvim_create_augroup('user_supermaven_gate', { clear = true }),
+        callback = sync,
+      })
+
+      vim.api.nvim_create_autocmd('User', {
+        group = 'user_supermaven_gate',
+        pattern = { 'BlinkCmpMenuOpen', 'BlinkCmpMenuClose' },
+        callback = function(args)
+          menu_open = args.match == 'BlinkCmpMenuOpen'
+          sync()
+        end,
+      })
 
       -- 薄さは blink のゴーストテキストと揃える
       local function set_hl()
