@@ -69,5 +69,16 @@ scrollback-limit = 10000000
 copy-on-select = true
 
 # Use right/left option key as Alt.
-# macos-option-as-alt = true# 取りうる値は true / false / left / right の4つで、両方を指す値は true
+# 取りうる値は true / false / left / right の4つで、両方を指す値は true
 macos-option-as-alt = true
+
+# ─── キー ────────────────────────────────────────────────────
+
+# Option + 矢印の変換を外す。
+#
+# 既定では esc:f / esc:b（readline の単語移動）へ変換して送るが、
+# zsh 側は標準の符号 ^[[1;3C / ^[[1;3D を bindkey してあるので、
+# 変換を外した方が .zshrc の記述どおりに動く。
+# Neovim にも <M-Right> / <M-Left> として届くようになる
+keybind = alt+arrow_right=unbind
+keybind = alt+arrow_left=unbind
