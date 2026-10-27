@@ -977,6 +977,8 @@ iceberg 以外に切り替えても、透過と差分の色はそのまま効く
 
 **Astro は TypeScript 6 以下でしか型の機能が動かない。** Astro の LSP と `astro check` は、TS 7 の npm パッケージから消えた `tsserverlibrary.js` を使う。Astro のプロジェクトでは TS 6 を入れる。
 
+**TypeScript 7 のプロジェクトでは、vtsls ではなく `tsc` が付く。** vtsls はプロジェクトの `tsserver` を使うが、TS 7 には無い。TS 7 の `tsc` は自身が言語サーバになる（`tsc --lsp --stdio`）。プロジェクトの `node_modules/typescript` の版で振り分ける（`after/lsp/vtsls.lua` の `root_dir`）。Next.js の editor 向けの plugin（`tsconfig.json` の `plugins`）は `tsserver` の plugin なので、`tsc` では働かないと思われる（未確認）。
+
 **Astro のプロジェクトでは、`prettier-plugin-astro` を `.prettierrc` の `overrides` の中に書く。** 一番上の `plugins` に書くと、prettierd はプロジェクトのすべてのファイル（`.ts` も `.css` も）で `Cannot find package .../prettier/index.js` を出して整形できない。`overrides` で `*.astro` にだけ効かせると、prettierd のままで `.astro` も他のファイルも整形できる。
 
 ```js
