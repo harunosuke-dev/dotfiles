@@ -12,11 +12,12 @@
 # 右 cmd は F18 に変えて Hammerspoon が使っているため、左 cmd で押す。
 #
 # alt 単独にも何も割り当てない。skhd は OS 全体でキーを横取りするため、
-# 割り当てると端末側に届かなくなる。実際に以下が潰れていた。
+# 割り当てると端末側に届かなくなる。素の alt は以下が使っている。
 #
-#   Alt + f   zsh の tmux-sessionizer-popup
-#   Alt + ,   zsh の _history-complete-newer
-#   Alt + j/k tmux のペイン移動
+#   Alt + 矢印       zsh の単語移動（.zshrc の bindkey）
+#   Alt + backspace  zsh の単語削除
+#   Alt + l / 矢印   Neovim の AI 補完の受け入れ
+#   Alt + e          Neovim の nvim-autopairs（括弧で囲む）
 ###########################################################
 
 ###########################################################
