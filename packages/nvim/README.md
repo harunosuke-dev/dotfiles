@@ -979,6 +979,8 @@ iceberg 以外に切り替えても、透過と差分の色はそのまま効く
 
 **TypeScript 7 のプロジェクトでは、vtsls ではなく `tsc` が付く。** vtsls はプロジェクトの `tsserver` を使うが、TS 7 には無い。TS 7 の `tsc` は自身が言語サーバになる（`tsc --lsp --stdio`）。プロジェクトの `node_modules/typescript` の版で振り分ける（`after/lsp/vtsls.lua` の `root_dir`）。Next.js の editor 向けの plugin（`tsconfig.json` の `plugins`）は `tsserver` の plugin なので、`tsc` では働かないと思われる（未確認）。
 
+**TS 7 の `tsc` は、カーソル下の単語の強調（documentHighlight）にいつも空で答える。** vim-illuminate が光らせなくなるので、`after/lsp/tsc.lua` で要求を references に差し替え、同じファイルの中の参照だけを光らせている。treesitter に任せると、名前が同じだけの別の変数まで光るため。
+
 **Astro のプロジェクトでは、`prettier-plugin-astro` を `.prettierrc` の `overrides` の中に書く。** 一番上の `plugins` に書くと、prettierd はプロジェクトのすべてのファイル（`.ts` も `.css` も）で `Cannot find package .../prettier/index.js` を出して整形できない。`overrides` で `*.astro` にだけ効かせると、prettierd のままで `.astro` も他のファイルも整形できる。
 
 ```js
