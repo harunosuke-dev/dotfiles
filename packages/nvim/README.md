@@ -983,6 +983,8 @@ iceberg 以外に切り替えても、透過と差分の色はそのまま効く
 
 **TS 7 の `tsc` は、カーソル下の単語の強調（documentHighlight）にいつも空で答える。** vim-illuminate が光らせなくなるので、`after/lsp/tsc.lua` で要求を references に差し替え、同じファイルの中の参照だけを光らせている。treesitter に任せると、名前が同じだけの別の変数まで光るため。
 
+**TS 7 の `tsc` には、`import 名前` と打った時点で `from "…"` まで出す補完が無い。** `from "` の後の module の名前の補完はある。本文の補完では、言語サーバは import 先の付いた候補を返すが、エディタで出て import が足されるとは限らない（本人の環境では出なかった。2026-10-29）。設定では入らない。
+
 **Astro のプロジェクトでは、`prettier-plugin-astro` を `.prettierrc` の `overrides` の中に書く。** 一番上の `plugins` に書くと、prettierd はプロジェクトのすべてのファイル（`.ts` も `.css` も）で `Cannot find package .../prettier/index.js` を出して整形できない。`overrides` で `*.astro` にだけ効かせると、prettierd のままで `.astro` も他のファイルも整形できる。
 
 ```js
