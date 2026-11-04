@@ -5,7 +5,16 @@ return {
     cmd = { 'LazyGit', 'LazyGitCurrentFile', 'LazyGitFilter', 'LazyGitFilterCurrentFile' },
     dependencies = { 'nvim-lua/plenary.nvim' },
     keys = {
-      { '<leader>gg', '<cmd>LazyGit<cr>', desc = 'Open lazygit' },
+      -- 直接 :LazyGit を呼ばず、起動した窓を覚える包みを通す。
+      -- lazygit の中で e を押した時に、その窓へファイルを返すため
+      -- （lua/config/lazygit.lua）
+      {
+        '<leader>gg',
+        function()
+          require('config.lazygit').open()
+        end,
+        desc = 'Open lazygit',
+      },
     },
   },
 
