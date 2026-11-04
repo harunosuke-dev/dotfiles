@@ -50,9 +50,22 @@ gui:
     modifiedFgColor:
       - "#C6A86D" # Muted yellow
 os:
-  openCommand: "code --goto -- {{filename}}:{{line}}"
-  editCommand: "nvim"
-  editCommandTemplate: "{{editor}} +{{line}} -- {{filename}}"
+  # lazygit の中で e / o を押した時。
+  #
+  # nvim の中から起動した場合（$NVIM に RPC ソケットが入る）は、nvim 側の
+  # 関数を1回呼ぶだけにする。そこで lazygit を畳み、起動したペインへ戻り、
+  # ファイルを開く。この3つを分けて送ると非同期で順番が狂い、
+  # フォーカスだけ移って lazygit が開いたまま残る。
+  #
+  # 既定の `nvim` では lazygit の端末の中に入れ子の nvim が立ち上がり、
+  # 親には届かない。
+  #
+  # 窓を覚えているのは nvim 側（lua/config/lazygit.lua）。
+  # require の引数に Lua の長括弧を使うのは、YAML を単一引用符で囲むため
+  open: 'if [ -z "$NVIM" ]; then nvim -- {{filename}}; else nvim --server "$NVIM" --remote-send "<Cmd>lua require[[config.lazygit]].edit([[{{filename}}]])<CR>"; fi'
+  edit: 'if [ -z "$NVIM" ]; then nvim -- {{filename}}; else nvim --server "$NVIM" --remote-send "<Cmd>lua require[[config.lazygit]].edit([[{{filename}}]])<CR>"; fi'
+  editAtLine: 'if [ -z "$NVIM" ]; then nvim +{{line}} -- {{filename}}; else nvim --server "$NVIM" --remote-send "<Cmd>lua require[[config.lazygit]].edit([[{{filename}}]], [[{{line}}]])<CR>"; fi'
+
 # keybinding:
 #   commits:
 #     viewResetOptions: G
