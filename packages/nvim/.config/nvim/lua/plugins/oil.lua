@@ -82,6 +82,11 @@ return {
     view_options = {
       show_hidden = true, -- .env や .github を隠さない
     },
+    -- <C-p> で開いたプレビューを、カーソルを動かすだけで次のファイルへ切り替える。
+    -- 既定では行を移るたびに <C-p> を押し直す必要があり、辿りながら中身を見られない
+    preview_win = {
+      update_on_cursor_moved = true,
+    },
     win_options = {
       -- git の状態を出す列。gitsigns は oil のバッファ（oil:// という実ファイルで
       -- ない名前）に attach しないので、lua/config/oil-git.lua が自分で置く
