@@ -129,6 +129,12 @@ end
 --- files に rg_opts を、live_grep に fd_opts を渡しても無視されるので、
 --- 両方を持たせて1つの関数で済ませる
 
+--- Neovim の今の場所（cwd）。fzf-lua へ何も渡さなければ既定で cwd を見る。
+--- <Space>fp でプロジェクトへ移った後など、意図して絞っている場所をそのまま使う
+local function scope_cwd()
+  return {}
+end
+
 --- 今のバッファから見た git のルート。worktree や submodule の .git も拾う。
 --- リポジトリの外では今の場所のまま動かす。
 --- 一番よく押すキーに割り当てるため、外れた時も通知は出さない。
@@ -207,9 +213,14 @@ return {
   'ibhagwan/fzf-lua',
   cmd = 'FzfLua',
   keys = {
-    -- ファイル系。範囲は3段階。git のルート → 手元のプロジェクト全部 → ホーム
-    { '<leader>ff', find_files(scope_root), desc = '[F]ind [F]ile in the git root' },
-    { '<leader>fg', find_grep(scope_root), desc = '[F]ind by [G]rep in the git root' },
+    -- ファイル系。範囲は4段階で、キーの大小が広さを表す。
+    --
+    --   ff / fg   今の場所（cwd）
+    --   fF / fG   .git のルート
+    --   Ff / Fg   手元のプロジェクト全部
+    --   FF / FG   ホーム全体
+    { '<leader>ff', find_files(scope_cwd), desc = '[F]ind [F]ile in the current directory' },
+    { '<leader>fg', find_grep(scope_cwd), desc = '[F]ind by [G]rep in the current directory' },
     { '<leader>fb', '<cmd>FzfLua buffers<cr>', desc = '[F]ind [B]uffer already open / <Space><Space>' },
     { '<leader>fr', '<cmd>FzfLua oldfiles<cr>', desc = '[F]ind [R]ecent across projects' },
 
@@ -257,17 +268,20 @@ return {
       end,
       desc = '[F]ind [P]roject : cd and browse',
     },
-    -- 手元のプロジェクトをまとめて横断する
-    { '<leader>fF', find_files(scope_projects), desc = '[F]ind [F]ile across projects' },
-    { '<leader>fG', find_grep(scope_projects), desc = '[F]ind by [G]rep across projects' },
-    -- ホーム全体。プロジェクト以外（書類や設定）まで探す時だけ使うので、
-    -- 押しにくい <leader>F 側へ置く
+    -- リポジトリ全体。サブディレクトリで開いていてもルートから探せる
+    { '<leader>fF', find_files(scope_root), desc = '[F]ind [F]ile in the git root' },
+    { '<leader>fG', find_grep(scope_root), desc = '[F]ind by [G]rep in the git root' },
+    -- 手元のプロジェクトをまとめて横断する。別のリポジトリの書き方を探す時
+    { '<leader>Ff', find_files(scope_projects), desc = '[F]ind [F]ile across projects' },
+    { '<leader>Fg', find_grep(scope_projects), desc = '[F]ind by [G]rep across projects' },
+    -- ホーム全体。プロジェクト以外（書類や設定）まで探す時だけ使う
     { '<leader>FF', find_files(scope_home), desc = '[F]ind [F]ile under home' },
     { '<leader>FG', find_grep(scope_home), desc = '[F]ind by [G]rep under home' },
 
     -- カーソル下の単語をそのまま検索。調べ物の起点として使用頻度が高い。
-    -- 範囲は <leader>fg と揃える。片方だけ今の場所を見ると、
-    -- サブディレクトリで開いた時に見つかり方が変わる
+    --
+    -- 範囲は cwd ではなく .git のルートに固定する。語の出どころを探す用途では
+    -- リポジトリ全体を見た方が当たる。cwd に絞ると取りこぼす
     {
       '<leader>fw',
       find_word('grep_cword', scope_root),

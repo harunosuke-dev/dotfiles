@@ -45,7 +45,7 @@ return {
       { '<leader>b', group = '[B]uffer' },
       { '<leader>c', group = '[C]ode' },
       { '<leader>f', group = '[F]ind' },
-      { '<leader>F', group = '[F]ind under home' },
+      { '<leader>F', group = '[F]ind in a wider scope' },
       { '<leader>g', group = '[G]o to / [G]it' },
       { '<leader>h', group = '[H]unk' },
       { '<leader>n', group = '[N]otification' },
