@@ -354,7 +354,65 @@ return {
       RIPGREP_CONFIG_PATH = vim.env.RIPGREP_CONFIG_PATH,
     },
     oldfiles = { formatter = 'path.filename_first', include_current_session = true },
-    buffers = { formatter = 'path.filename_first' },
+    -- 既に窓に出ているバッファは、そこへ飛ぶ。同じファイルを2枚開かずに済む。
+    --
+    -- 差分を映している窓は飛び先にしない。codediff のペインは実ファイルの
+    -- バッファをそのまま表示しているため、編集するつもりで選んだのに
+    -- 差分の片側へ入ってしまう。
+    --
+    -- codediff は nvim の差分モードを使わず自前で描くので、
+    -- vim.wo.diff では判定できない。タブに codediff のバッファが
+    -- 1つでもあれば、そのタブごと飛び先から外す。
+    -- :DiffDisk の差分は差分モードなので wo.diff で拾える。
+    --
+    -- 今いるタブを先に見る。同じタブに出ているなら動かずに済む
+    buffers = {
+      formatter = 'path.filename_first',
+      actions = {
+        ['default'] = function(selected, opts)
+          local entry = require('fzf-lua.path').entry_to_file(selected[1], opts)
+          -- bufnr が入らない形で来ることがあるのでパスからも引く
+          local bufnr = entry.bufnr
+          if not bufnr and entry.path then
+            local found = vim.fn.bufnr(vim.fn.fnamemodify(entry.path, ':p'))
+            bufnr = found >= 0 and found or nil
+          end
+          if bufnr then
+            local function shows_codediff(tab)
+              for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
+                local ft = vim.bo[vim.api.nvim_win_get_buf(win)].filetype
+                if ft:match('^codediff') then
+                  return true
+                end
+              end
+              return false
+            end
+
+            -- 今いるタブを先頭に並べ替える
+            local tabs = { vim.api.nvim_get_current_tabpage() }
+            for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
+              if tab ~= tabs[1] then
+                tabs[#tabs + 1] = tab
+              end
+            end
+
+            for _, tab in ipairs(tabs) do
+              if not shows_codediff(tab) then
+                for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
+                  if vim.api.nvim_win_get_buf(win) == bufnr and not vim.wo[win].diff then
+                    vim.api.nvim_set_current_tabpage(tab)
+                    vim.api.nvim_set_current_win(win)
+                    return
+                  end
+                end
+              end
+            end
+          end
+          -- どの窓にも出ていなければ今まで通り開く
+          require('fzf-lua.actions').file_edit(selected, opts)
+        end,
+      },
+    },
     -- f/ と / のバッファ内検索だけプレビューを畳む。今開いているファイルなので
     -- 候補行の周りは画面にそのまま見えている。
     --
