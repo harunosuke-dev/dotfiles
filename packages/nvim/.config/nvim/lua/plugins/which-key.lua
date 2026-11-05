@@ -54,6 +54,7 @@ return {
       { '<leader>u', group = '[U]I toggles' },
       { '<leader>w', group = '[W]indow' },
       { '<leader>x', group = 'Lists that stay open' },
+      { '<leader>y', group = '[Y]ank the location' },
       { ']', group = 'Next' },
       { '[', group = 'Prev' },
     },

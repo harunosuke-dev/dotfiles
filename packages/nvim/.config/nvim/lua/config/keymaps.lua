@@ -195,6 +195,23 @@ map({ 'n', 'x' }, 'x', '"_x', { desc = 'Delete a character without touching regi
 map({ 'n', 'x' }, '<leader>p', '"+p', { desc = '[P]aste the last yank' })
 map({ 'n', 'x' }, '<leader>P', '"+P', { desc = '[P]aste the last yank before' })
 
+-- 場所を伝えるためのヤンク。AI エージェントへ「どこの話か」を渡す時に使う。
+-- パスと行番号を手で打つ手間を省く（lua/config/yank.lua）
+map('n', '<leader>yf', function()
+  require('config.yank').location()
+end, { desc = '[Y]ank the [f]ile path with the line number' })
+
+map('n', '<leader>yp', function()
+  require('config.yank').location(true)
+end, { desc = '[Y]ank the full [p]ath with the line number' })
+
+-- 選択範囲を Markdown のコードブロックとして。ファイル名と開始行が付く
+map('x', '<leader>yc', function()
+  -- '< '> を確定させるため、ビジュアルモードを抜けてから呼ぶ
+  vim.cmd('normal! \27')
+  require('config.yank').codeblock()
+end, { desc = '[Y]ank as a [c]ode block' })
+
 -- * / g* を「その場に留まる」動きにする。
 --
 -- 標準の * は検索語を登録したうえで次の出現へ飛ぶ。そのため cgn で置換を
