@@ -79,6 +79,14 @@ return {
     watch_for_changes = true,
     delete_to_trash = true, -- 削除は :w 時にゴミ箱へ（復元可能）
     skip_confirm_for_simple_edits = false, -- 変更内容の確認は必ず出す
+    -- 改名時に LSP が import を書き換えたバッファを保存する。
+    --
+    -- 既定は false で、書き換えが未保存のまま残る。
+    -- 気づかずに閉じると参照の修正だけが消え、改名だけが残る。
+    -- 'unmodified' なので、自分が編集中のバッファには触らない
+    lsp_file_methods = {
+      autosave_changes = 'unmodified',
+    },
     view_options = {
       show_hidden = true, -- .env や .github を隠さない
     },
