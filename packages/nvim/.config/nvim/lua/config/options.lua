@@ -49,7 +49,7 @@ opt.termguicolors = true
 -- 起動時のイントロ画面を出さない。引数なしで開いた時はファイラか差分を出すので、
 -- 一瞬だけ見えて消える案内文に意味が無い
 opt.shortmess:append('I')
--- 使うのは dark の配色だけ。everforest や gruvbox は 'background' の値で
+-- 使うのは dark の配色だけ。gruvbox などは 'background' の値で
 -- light と dark が変わるため、既定と同じ値でも明示しておく
 opt.background = 'dark'
 -- 長い行は折り返す。j / k は表示行で動かし、回数を付けた時だけ論理行にするので

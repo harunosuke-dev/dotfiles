@@ -78,7 +78,7 @@ return {
   -- 反映を見てから自分で保存する。行ごとに「記録時と同じ中身か」を照合し、
   -- 違えばその行だけ拒んで理由を一覧に差し込む。
   --
-  -- 一括置換そのものは <Space>rr（grug-far）と :cdo でもできる。
+  -- 一括置換そのものは :cdo でもできる。
   -- ここの取り柄は、今見ている一覧を行ごとに不揃いに直せること
   {
     'stevearc/quicker.nvim',
@@ -121,12 +121,5 @@ return {
       { '<leader>xt', '<cmd>Trouble todo toggle<cr>', desc = 'TODO list, keep it open' },
       { '<leader>xq', '<cmd>Trouble qflist toggle<cr>', desc = 'Quickfix list in trouble' },
     },
-  },
-
-  -- TypeScript のエラーメッセージを平易な文に置き換える。
-  {
-    'dmmulroy/ts-error-translator.nvim',
-    ft = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
-    opts = {},
   },
 }

@@ -50,10 +50,8 @@ return {
   -- dark: github_dark と _default / _dimmed / _colorblind / _high_contrast / _tritanopia
   -- light: github_light と _default / _colorblind / _high_contrast / _tritanopia
   -- background には追従しない。名前で選ぶ
-  { 'projekt0n/github-nvim-theme', name = 'github-theme' },
 
   -- 名前は1つだけ。background に追従して light / dark が変わる
-  { 'neanias/everforest-nvim' },
   { 'sainnhe/gruvbox-material' },
   { 'ellisonleao/gruvbox.nvim' }, -- 素の gruvbox（Lua 移植版）
 

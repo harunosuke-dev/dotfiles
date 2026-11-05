@@ -49,8 +49,6 @@ return {
       { '<leader>g', group = '[G]o to / [G]it' },
       { '<leader>h', group = '[H]unk' },
       { '<leader>n', group = '[N]otification' },
-      { '<leader>r', group = '[R]eplace' },
-      { '<leader>s', group = '[S]ession' },
       { '<leader>sn', group = '[N]pm packages' },
       { '<leader>u', group = '[U]I toggles' },
       { '<leader>w', group = '[W]indow' },
