@@ -424,6 +424,13 @@ function M.diff()
   -- 行が無い側に並ぶ埋め。相手側の色を持たせると「左に赤・右に緑」が崩れるので
   -- 何も塗らない。行が揃って表示されるため、空白でも欠けている場所は分かる
   vim.api.nvim_set_hl(0, 'DiffDelete', { fg = DIFF.fill })
+
+  -- mini.diff のオーバーレイで消えた行に出すもの（<Space>gd）。
+  --
+  -- 既定では DiffDelete を継ぐが、あちらは埋め草用で文字色しか持たない。
+  -- ここに出るのは実際に消えた中身なので、codediff の削除側（DiffChangeOld）と
+  -- 同じ帯にする
+  vim.api.nvim_set_hl(0, 'MiniDiffOverDelete', { bg = DIFF.delete })
 end
 
 --- カーソル行の帯を左端の列まで伸ばす。

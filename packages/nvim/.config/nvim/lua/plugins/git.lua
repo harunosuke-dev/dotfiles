@@ -18,6 +18,54 @@ return {
     },
   },
 
+  -- 変更前の内容を本文の上に重ねて見せる。git diff のような並びになる。
+  --
+  -- gitsigns にも preview_hunk_inline があるが、そちらは hunk を1つずつ出す。
+  -- バッファの全 hunk を一度に重ねられるのはこちらだけ。
+  --
+  -- 符号列は gitsigns が持っているので、こちらは譲る。
+  --
+  -- mini.diff の既定は「number が有効なら行番号に色を付ける」という作りだが、
+  -- この設定は行番号の色を自分で決めているため使わない。
+  -- 符号側に回し、空白の符号と低い優先度（gitsigns は 6）で席を譲る。
+  --
+  -- 既定のキー（gh / gH / ]h / [h）も張らない。gh は codediff、]c は gitsigns が使う
+  {
+    'nvim-mini/mini.diff',
+    keys = {
+      {
+        '<leader>gd',
+        function()
+          local diff = require('mini.diff')
+          -- キーで遅延読み込みしているため、setup() が走る時点では
+          -- バッファが既に開かれており、有効化されていない。
+          -- 押した時にその場で有効にする（毎回 BufReadPre で読むより軽い）
+          if not diff.get_buf_data(0) then
+            diff.enable(0)
+          end
+          diff.toggle_overlay()
+        end,
+        desc = '[G]it [D]iff overlay in the buffer',
+      },
+    },
+    opts = {
+      view = {
+        style = 'sign',
+        signs = { add = ' ', change = ' ', delete = ' ' },
+        priority = 1,
+      },
+      mappings = {
+        apply = '',
+        reset = '',
+        textobject = '',
+        goto_first = '',
+        goto_prev = '',
+        goto_next = '',
+        goto_last = '',
+      },
+    },
+  },
+
   -- 編集中に見える範囲の差分表示と、hunk 単位の細かい操作は gitsigns が担当する
   {
     'lewis6991/gitsigns.nvim',
@@ -75,6 +123,12 @@ return {
         map('n', '<leader>hb', function()
           gs.blame_line({ full = true })
         end, '[H]unk [B]lame : commit for line')
+        -- バッファ全体の blame。横に専用の窓が開き、各行の著者と日付が
+        -- 本文と行を揃えて並ぶ（スクロールも同期する）。
+        -- hb は1行だけなので、面で見たい時はこちら
+        map('n', '<leader>hB', function()
+          gs.blame()
+        end, '[H]unk [B]lame : the whole buffer')
         -- 1ファイルに絞った差分。gitsigns の diffthis ではなく codediff で開く。
         --
         -- diffthis は縦分割でインデックス側のバッファを開くが、閉じる順番を誤ると

@@ -150,7 +150,8 @@ return {
           --   gr → gr{char} 仮想置換（R や r で代替できる）
           --   gI → 1列目から挿入（0i で代替できる。gi「前回の挿入位置」は温存する）
           --   gT → 前のタブページへ（タブを使わない構成のため。gt は残る）
-          map('<leader>gd', '<cmd>FzfLua lsp_definitions jump1=true<cr>', '[G]o to [D]efinition')
+          -- 定義へは gd だけ。<leader>gd も張っていたが、2打鍵で足りるうえ
+          -- <leader>g 側は git の操作で埋まっているため畳んだ
           map('gd', '<cmd>FzfLua lsp_definitions jump1=true<cr>', '[G]o to [D]efinition')
 
           map('<leader>gr', '<cmd>FzfLua lsp_references jump1=true<cr>', '[G]o to [R]eferences')
