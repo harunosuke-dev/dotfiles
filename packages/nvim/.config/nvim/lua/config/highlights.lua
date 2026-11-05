@@ -210,25 +210,6 @@ function M.apply()
     vim.api.nvim_set_hl(0, group, { fg = ICEBERG.faint })
   end
 
-  -- Markdown の整形表示（render-markdown）。
-  --
-  -- 既定では H1 から H6 まで6段階すべてが @markup.heading.N.markdown を継ぎ、
-  -- iceberg ではどれも同じオレンジ（#e2a578）になる。階層の区別が付かないうえ、
-  -- 見出しの多い文書ではオレンジだらけになる。
-  --
-  -- 色ではなく明度と太字で階層を作る。診断以外に色を使わない方針に合わせる。
-  -- 見出しの背景（*Bg）は Diff の色（緑・赤・青）を継ぐので使わない
-  vim.api.nvim_set_hl(0, 'RenderMarkdownH1', { fg = normal.fg, bold = true })
-  vim.api.nvim_set_hl(0, 'RenderMarkdownH2', { fg = normal.fg, bold = true })
-  vim.api.nvim_set_hl(0, 'RenderMarkdownH3', { fg = ICEBERG.breadcrumb, bold = true })
-  vim.api.nvim_set_hl(0, 'RenderMarkdownH4', { fg = ICEBERG.breadcrumb })
-  vim.api.nvim_set_hl(0, 'RenderMarkdownH5', { fg = ICEBERG.faint })
-  vim.api.nvim_set_hl(0, 'RenderMarkdownH6', { fg = ICEBERG.faint })
-
-  -- 実際に文字を塗っているのは treesitter の @markup.* 側。
-  -- iceberg では見出しが Title（#e2a578 オレンジ）、表や強調が Special
-  -- （#b5bf82 オリーブ）になり、文書全体が賑やかになる。
-  -- RenderMarkdown* を直すだけでは変わらないので、こちらも揃える
   for _, group in ipairs({
     '@markup.heading',
     '@markup.heading.1.markdown',
@@ -261,28 +242,6 @@ function M.apply()
   -- 増えない。区切り記号を強調するのは一般的な慣習とも逆
   vim.api.nvim_set_hl(0, '@markup.math.delimiter', { fg = 0x8fbf7f })
   vim.api.nvim_set_hl(0, '@markup.math.delimiter.markdown_inline', { fg = 0x8fbf7f })
-
-  -- 記号類も彩度を落とす。コードブロックの言語名とチェック済みの印は
-  -- 既定で #b5bf82 のオリーブ
-  vim.api.nvim_set_hl(0, 'RenderMarkdownCodeInfo', { fg = ICEBERG.faint })
-  vim.api.nvim_set_hl(0, 'RenderMarkdownChecked', { fg = ICEBERG.breadcrumb })
-  vim.api.nvim_set_hl(0, 'RenderMarkdownUnchecked', { fg = ICEBERG.faint })
-  vim.api.nvim_set_hl(0, 'RenderMarkdownBullet', { fg = ICEBERG.breadcrumb })
-  vim.api.nvim_set_hl(0, 'RenderMarkdownTableHead', { fg = ICEBERG.breadcrumb })
-  vim.api.nvim_set_hl(0, 'RenderMarkdownTableRow', { fg = ICEBERG.faint })
-
-  -- コードブロックの行で、ブロックの幅を超えた右側の余白を塗るためのもの。
-  -- render-markdown の padding.highlight から参照される（lua/plugins/markdown.lua）。
-  --
-  -- 既定では Normal が使われるが、ハイライトの定義はウィンドウごとに変わらない
-  -- ため、非アクティブなウィンドウでもそこだけ減光されず帯状に明るく残っていた。
-  -- 背景を持たせなければ、その窓の地の色（NormalNC）が透ける
-  vim.api.nvim_set_hl(0, 'RenderMarkdownPadding', {})
-
-  -- --- を横線として描く時の色。既定は LineNr へのリンクだが、こちらで
-  -- 行番号の列の背景を本文より暗くしているため、その背景ごと引き継いで
-  -- 横線の1行だけ帯状に沈んで見えていた。文字色だけ受け取り、背景は敷かない
-  vim.api.nvim_set_hl(0, 'RenderMarkdownDash', { fg = ICEBERG.linenr })
 
   -- 起動画面（snacks の dashboard）。
   --

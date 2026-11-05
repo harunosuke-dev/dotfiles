@@ -48,6 +48,7 @@ return {
       { '<leader>F', group = '[F]ind in a wider scope' },
       { '<leader>g', group = '[G]o to / [G]it' },
       { '<leader>h', group = '[H]unk' },
+      { '<leader>m', group = '[M]arkdown' },
       { '<leader>n', group = '[N]otification' },
       { '<leader>sn', group = '[N]pm packages' },
       { '<leader>u', group = '[U]I toggles' },

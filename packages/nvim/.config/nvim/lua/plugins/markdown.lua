@@ -1,67 +1,57 @@
--- Markdown の表示。ドキュメントを書く時にだけ効く。
+-- Markdown のプレビュー。ブラウザに整形済みの文書を出し、入力とスクロールを同期する。
 --
--- 見出し・表・コードブロック・チェックボックスをバッファの中で整形して描く。
--- 実際のファイルは書き換えず、表示だけを変える。
---
--- 完全に自動で、キー操作は不要
+-- バッファの中で装飾する方式（render-markdown）はやめた。画像・数式・Mermaid が
+-- 出ないため、書いたものの最終形を確かめられない。
 return {
   {
-    'MeanderingProgrammer/render-markdown.nvim',
-    -- mdx でも効かせる。ブログの記事が .mdx のため。
-    -- JSX の部分（<Box> など）は Markdown ではないので素のまま残る
-    ft = { 'markdown', 'markdown_inline', 'mdx' },
-    dependencies = {
-      'nvim-treesitter/nvim-treesitter',
-      'nvim-tree/nvim-web-devicons',
-    },
-    opts = {
-      -- 挿入モードでは素のテキストに戻す。編集中に文字がずれると書きにくい
-      render_modes = { 'n', 'c', 't' },
+    'iamcco/markdown-preview.nvim',
+    ft = { 'markdown', 'mdx' },
+    cmd = { 'MarkdownPreview', 'MarkdownPreviewStop', 'MarkdownPreviewToggle' },
+    -- 公式は `cd app && yarn install` だが yarn を入れていない。
+    -- 同梱の取得関数はビルド済みのものを落としてくるので npm も要らない。
+    --
+    -- WARNING: 遅延読み込みのため、build が走る時点では autoload が未登録。
+    -- 先に読み込ませないと mkdp#util#install が見つからない
+    build = function(plugin)
+      require('lazy').load({ plugins = { plugin.name } })
+      vim.fn['mkdp#util#install']()
+    end,
+    init = function()
+      -- mdx も markdown として扱う。拡張子の対応は filetype.lua 側で済んでいる
+      vim.g.mkdp_filetypes = { 'markdown', 'mdx' }
 
-      -- リンクの [] () とパスを隠さない。
-      --
-      -- Neovim 標準の markdown_inline の定義が conceal "" を指定しており、
-      -- conceallevel が 1 以上だと ![説明](/images/a.jpg) が「説明」だけに
-      -- 畳まれる。どの画像を指しているのか分からず、パスを直す時に困る。
-      --
-      -- このプラグインは既定で 3 に上げるので、0 のままにさせる。
-      -- 見出しや箇条書きの整形は仮想テキストで描かれるため影響を受けない
-      win_options = {
-        conceallevel = { default = 0, rendered = 0 },
-      },
-      code = {
-        -- 背景を敷くだけにする。枠線は本文の邪魔になる。
-        -- この形式では ```ts の行が隠れ、言語名が別に描かれる
-        style = 'normal',
-        width = 'block',
-        left_pad = 2,
-        right_pad = 2,
-      },
+      -- 開くのは手で押した時だけ。markdown を開くたびにブラウザが出ると邪魔になる
+      vim.g.mkdp_auto_start = 0
+      -- 別のファイルへ移った時に閉じる。開いたままだと中身が前のファイルのまま残る
+      vim.g.mkdp_auto_close = 1
+      -- 配色は nvim 側と揃える。背景を透過させている都合で dark に固定している
+      vim.g.mkdp_theme = 'dark'
 
-      -- コードブロックの行では、ブロックの幅を超えた右側の余白を仮想テキストで
-      -- 塗り直している。その色が既定で Normal に固定されているため、非アクティブな
-      -- ウィンドウでもそこだけ減光されず、帯状に明るく残っていた。
+      -- Chrome を新しいウィンドウで開く。
       --
-      -- 背景を持たないグループへ向けると、その窓の地の色（NormalNC）が透ける。
-      -- 定義は lua/config/highlights.lua
-      padding = { highlight = 'RenderMarkdownPadding' },
+      -- mkdp_browser はコマンド名だけを受ける指定で、--new-window のような
+      -- 引数を渡せない。関数を渡せば自分で組み立てられる。
+      --
+      -- WARNING: Lua の関数は渡せない。プラグインは RPC で
+      -- nvim_call_function(名前, [url]) を呼ぶため（app/server.js:157）、
+      -- v:lua.Foo の形は関数名として解決されず E117 になる。
+      --
+      -- open の -n は「起動済みでも新しいインスタンスを開く」、
+      -- --args 以降は Chrome 自身に渡る（macOS の open の仕様）
+      vim.cmd([[
+        function! MkdpOpenInChrome(url) abort
+          call jobstart(['open', '-na', 'Google Chrome', '--args', '--new-window', a:url])
+        endfunction
+      ]])
 
-      -- 画像とリンクをアイコンに置き換えない。
-      --
-      -- 既定では ![alt](path) が 󰥶 のような記号1つに畳まれ、どのファイルを
-      -- 指しているのか分からなくなる。パスを直したい時に開き直す必要があり、
-      -- 執筆中は元の記述が見えている方が扱いやすい
-      link = { enabled = false },
-
-      -- 箇条書きの記号を置き換えない。
-      --
-      -- Markdown では - * + のどれも箇条書きになる。数式ブロックの中で
-      -- 行頭に + を置くと、Markdown 側からは区別が付かず ● に化けていた。
-      -- 元の記号がそのまま見える方が、書いている内容と一致して分かりやすい
-      bullet = { enabled = false },
-      heading = {
-        -- 見出しの背景は敷かない。iceberg の配色に色を足さない方針に合わせる
-        backgrounds = {},
+      vim.g.mkdp_browserfunc = 'MkdpOpenInChrome'
+    end,
+    keys = {
+      {
+        '<leader>mp',
+        '<cmd>MarkdownPreviewToggle<cr>',
+        ft = { 'markdown', 'mdx' },
+        desc = '[M]arkdown [P]review in Chrome',
       },
     },
   },
