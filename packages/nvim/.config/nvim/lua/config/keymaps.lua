@@ -178,6 +178,23 @@ map({ 'n', 'x' }, 'y', '"+y', { desc = 'Yank to system clipboard' })
 map('n', 'Y', '"+y$', { desc = 'Yank to end of line into clipboard' })
 map('x', 'Y', '"+Y', { desc = 'Yank whole lines into clipboard' })
 
+-- 1文字削除でレジスタを汚さない。
+--
+-- x は「打ち間違いを消す」操作で、消した1文字を後で貼ることはほぼ無い。
+-- それでも無名レジスタを上書きするため、貼ろうとしていた内容が消える
+map({ 'n', 'x' }, 'x', '"_x', { desc = 'Delete a character without touching registers' })
+
+-- 直前にヤンクしたものを貼る。
+--
+-- 素の p は無名レジスタから貼るが、そこは削除でも上書きされる。
+-- 選択して p で貼り替えると消えた側が入り、2回目に同じものが貼れない。
+--
+-- この設定は y を "+y に張り替えてあるので、クリップボードが
+-- 「直前のヤンク」の置き場になっている（素の Vim の 0 番レジスタに相当）。
+-- 0 番はレジスタを明示した yank では更新されないため使えない
+map({ 'n', 'x' }, '<leader>p', '"+p', { desc = '[P]aste the last yank' })
+map({ 'n', 'x' }, '<leader>P', '"+P', { desc = '[P]aste the last yank before' })
+
 -- * / g* を「その場に留まる」動きにする。
 --
 -- 標準の * は検索語を登録したうえで次の出現へ飛ぶ。そのため cgn で置換を
