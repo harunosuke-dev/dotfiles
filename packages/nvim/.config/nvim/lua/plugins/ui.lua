@@ -65,6 +65,8 @@ return {
   -- 画面下部の1行を占有していたコマンドラインが浮くため、その分だけ本文が広く使える
   {
     'folke/noice.nvim',
+    -- 組み込みの ui2 と同時には動かない。どちらも ext_messages を取る
+    cond = not vim.g.core_ui2,
     event = 'VeryLazy',
     dependencies = { 'MunifTanjim/nui.nvim' },
     opts = {
