@@ -3,9 +3,12 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
--- 組み込みのメッセージ UI を試す切り替え。プラグインの spec から見えるよう、
--- lazy より前に決める。NVIM_UI2=1 nvim で起動すると noice の代わりに使う
-vim.g.core_ui2 = vim.env.NVIM_UI2 == '1'
+-- 組み込みのメッセージ UI（vim._core.ui2）を使う。
+--
+-- このブランチは noice を外せるかを見るためのもので、既定で有効にしてある。
+-- noice と見比べる時だけ NVIM_UI2=0 nvim で起動する。
+-- プラグインの spec から見えるよう、lazy より前に決める
+vim.g.core_ui2 = vim.env.NVIM_UI2 ~= '0'
 
 require('config.options')
 require('config.filetype')
