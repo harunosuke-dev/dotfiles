@@ -260,8 +260,16 @@ return {
       }
 
       -- 接続中の LSP サーバ名。補完が効かない時に切り分けられる
+      -- 読み込み中は進捗、済んだらサーバ名。
+      --
+      -- 進捗は noice が右下に出していた。ui2 には同じ役目の表示が無いため、
+      -- 「Loading workspace」が見えなくなる。ここで引き受ける
       local lsp = {
         function()
+          local progress = vim.lsp.status()
+          if progress ~= '' then
+            return progress
+          end
           local names = {}
           for _, client in ipairs(vim.lsp.get_clients({ bufnr = 0 })) do
             table.insert(names, client.name)
@@ -286,6 +294,22 @@ return {
           icons_enabled = true,
           component_separators = { left = '', right = '' },
           section_separators = { left = '', right = '' },
+          -- LSP の進捗は既定の更新契機では拾えない。
+          -- カーソルを動かさない間に始まって終わるため
+          refresh = {
+            events = {
+              'WinEnter',
+              'BufEnter',
+              'BufWritePost',
+              'FileChangedShellPost',
+              'VimResized',
+              'Filetype',
+              'CursorMoved',
+              'CursorMovedI',
+              'ModeChanged',
+              'LspProgress',
+            },
+          },
         },
         -- 画面最上部にタブページを並べる。バッファではなく :tabnew / gt のタブ。
         -- mode = 2 は「番号 + 名前」。path = 0 でファイル名だけにする。
