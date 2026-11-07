@@ -195,6 +195,12 @@ map({ 'n', 'x' }, 'x', '"_x', { desc = 'Delete a character without touching regi
 map({ 'n', 'x' }, '<leader>p', '"+p', { desc = '[P]aste the last yank' })
 map({ 'n', 'x' }, '<leader>P', '"+P', { desc = '[P]aste the last yank before' })
 
+-- プロジェクトの package.json をフロートで覗く。
+-- 依存名やスクリプト名を確かめるだけなら、窓を割るより速い（lua/config/package-json.lua）
+map('n', '<leader>j', function()
+  require('config.package-json').open()
+end, { desc = 'Open the package.[j]son of this project' })
+
 -- 場所を伝えるためのヤンク。AI エージェントへ「どこの話か」を渡す時に使う。
 -- パスと行番号を手で打つ手間を省く（lua/config/yank.lua）
 map('n', '<leader>yf', function()
