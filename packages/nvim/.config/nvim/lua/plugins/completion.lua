@@ -238,4 +238,103 @@ return {
       set_ghost_text_hl()
     end,
   },
+
+  -- 入力を待たずに続きを薄く出す AI 補完。
+  --
+  -- blink のゴーストテキストは「打った文字で絞った候補の1件目」なので、
+  -- 何も打っていない状態では出しようがない。こちらは文脈から続きを予測する。
+  --
+  -- 認証は :Copilot auth。資格情報はプラグインの外（Copilot の言語サーバが
+  -- 持つ場所）に置かれるため、このリポジトリには入らない
+  {
+    'zbirenbaum/copilot.lua',
+    -- 認証とログは挿入モードに入る前に打ちたい。
+    -- event だけだと :Copilot が存在しない
+    cmd = 'Copilot',
+    event = 'InsertEnter',
+    opts = {
+      -- 言語サーバは mason が入れたものを使う（lua/plugins/lsp.lua の tools）。
+      --
+      -- copilot.lua は既定で自分で取ってくるが、取得先は 102MB の zip で、
+      -- Neovim を開くたびに別々に始まる。何枚も開いていると帯域を分け合い、
+      -- どれも 10 分の制限に引っかかって終わらない。
+      -- 失敗しても画面に何も出ないため、認証だけが無反応に見えていた
+      --
+      -- 名前ではなく絶対パスで指す。mason が PATH に自分の bin を足すのは
+      -- mason.nvim を読み込んだ時で、こちらは InsertEnter で先に動くことがある。
+      -- その時は executable() が 0 を返し、起動しないまま黙って終わっていた
+      server = {
+        type = 'binary',
+        custom_server_filepath = vim.fn.stdpath('data') .. '/mason/bin/copilot-language-server',
+      },
+      -- 既定ではファイルへの記録が切られている（config/logger.lua:14）。
+      -- 起動に失敗した時に手がかりが何も残らないため、情報だけ残す
+      logger = {
+        file_log_level = vim.log.levels.INFO,
+      },
+      suggestion = {
+        auto_trigger = true, -- 打たなくても出す。これが入れた目的
+        -- 既定の割り当ては <Tab> と <C-]> などで、<Tab> は blink が使う。
+        -- <C-l> もスニペット一覧で埋まっているため、Alt 側に寄せる。
+        --
+        -- Ghostty は macos-option-as-alt = true なので Alt が届く。
+        -- <M-Right> は既定の esc:f 変換を外してある
+        -- （packages/ghostty/.config/ghostty/config の keybind）
+        keymap = {
+          accept = '<M-l>',
+          accept_word = '<M-Right>',
+          accept_line = false,
+          next = '<M-]>',
+          prev = '<M-[>',
+          dismiss = '<C-]>',
+        },
+      },
+      -- 候補を1件ずつ別窓に並べる機能。使わない。
+      -- 薄く出る1件を取るか捨てるかだけで足りる
+      panel = { enabled = false },
+      -- 既定では markdown と yaml が切られている。
+      -- 日本語の判定で止まるので、ファイル型で分ける必要はない
+      filetypes = { markdown = true, yaml = true, gitcommit = true },
+    },
+    config = function(_, opts)
+      require('copilot').setup(opts)
+
+      -- 出さない場面を打つたびに切り替える。
+      --
+      --   1. 日本語を打っている最中。blink の判定と揃える
+      --   2. blink のメニューが開いている間。薄い文字と候補窓が場所を取り合う
+      --
+      -- どちらもバッファ変数で、描画と要求のたびに読まれる
+      -- （suggestion/init.lua:46,256）。設定値を書き換える必要はない
+      local group = vim.api.nvim_create_augroup('user_copilot_gate', { clear = true })
+
+      vim.api.nvim_create_autocmd({ 'InsertEnter', 'TextChangedI', 'CursorMovedI' }, {
+        group = group,
+        callback = function(args)
+          vim.b[args.buf].copilot_suggestion_auto_trigger = is_ascii_context()
+        end,
+      })
+
+      -- blink は独自の窓で候補を出すので pumvisible() が立たない。
+      -- hide_during_completion はそれを見ているため効かず、自分で知らせる
+      vim.api.nvim_create_autocmd('User', {
+        group = group,
+        pattern = { 'BlinkCmpMenuOpen', 'BlinkCmpMenuClose' },
+        callback = function(args)
+          vim.b.copilot_suggestion_hidden = args.match == 'BlinkCmpMenuOpen'
+        end,
+      })
+
+      -- 薄さは blink のゴーストテキストと揃える
+      local function set_hl()
+        vim.api.nvim_set_hl(0, 'CopilotSuggestion', { link = 'Comment' })
+        vim.api.nvim_set_hl(0, 'CopilotAnnotation', { link = 'Comment' })
+      end
+      vim.api.nvim_create_autocmd('ColorScheme', {
+        group = vim.api.nvim_create_augroup('user_copilot_hl', { clear = true }),
+        callback = set_hl,
+      })
+      set_hl()
+    end,
+  },
 }
