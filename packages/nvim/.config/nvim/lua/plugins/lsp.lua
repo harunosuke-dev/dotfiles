@@ -30,6 +30,10 @@ local tools = {
   'shfmt', -- シェルスクリプトの整形
   'shellcheck', -- シェルスクリプトの静的解析（bashls が内部で使う）
   'sql-formatter', -- SQL の整形
+  -- Copilot の言語サーバ。copilot.lua も自分で取ってくるが、そちらは
+  -- Neovim を開くたびに 102MB の取得を始め、同時に何枚も開くと帯域を分け合う。
+  -- mason に任せれば1回で済み、進み具合も :Mason で見える
+  'copilot-language-server',
 }
 
 return {
@@ -193,11 +197,16 @@ return {
       require('mason-lspconfig').setup({
         ensure_installed = servers,
         automatic_enable = {
-          -- 導入済みサーバを自動で vim.lsp.enable() に流す。ただし stylua は除外する:
-          -- nvim-lspconfig には stylua を整形専用 LSP として扱う設定が同梱されており、
-          -- 整形ツールとして入れた stylua を拾って lua バッファに接続してしまう。
-          -- 整形は conform.nvim に一本化するため不要
-          exclude = { 'stylua' },
+          -- 導入済みサーバを自動で vim.lsp.enable() に流す。
+          --
+          -- stylua を除外する: nvim-lspconfig には stylua を整形専用 LSP として扱う
+          -- 設定が同梱されており、整形ツールとして入れた stylua を拾って lua バッファに
+          -- 接続してしまう。整形は conform.nvim に一本化するため不要。
+          --
+          -- copilot を除外する: 言語サーバは mason が入れるが、起動と接続は
+          -- copilot.lua が受け持つ。両方が有効だと同じ名前のクライアントが2つ立ち、
+          -- copilot.lua の setup が先客を SIGTERM で落とす（exit code 143 の警告）
+          exclude = { 'stylua', 'copilot' },
         },
       })
 
