@@ -127,6 +127,7 @@ nvim                                  # プラグインと LSP が自動導入�
 | `macism` | 日本語入力の自動解除 | `brew install macism` |
 
 LSP サーバと整形ツールは mason が自動導入する。手動操作は不要。
+Copilot の言語サーバもここに含まれる。認証だけは `:Copilot auth` を1度打つ必要がある。
 
 ### 設定を変えたときの反映
 
@@ -270,8 +271,18 @@ Copilot は文脈から続きを予測するので、行頭でも出る。
 
 **blink のメニューが開いている間は出ない。** 薄い文字と候補窓が場所を取り合うため。
 
-初回は `:Copilot auth` で認証する。資格情報は Copilot の言語サーバが持つ場所に置かれ、このリポジトリには入らない。
+初回は `:Copilot auth` で認証する。ワンタイムコードがクリップボードに入るので、出た URL で貼る。
+資格情報は `~/.config/github-copilot/auth.db` に置かれ、このリポジトリには入らない。
 `:Copilot status` で状態、`:Copilot disable` で止められる。
+
+**状態を見るときは実ファイルのバッファで打つこと。** `:checkhealth` の画面は `buftype` が空でないため、
+Copilot は接続せず `not attached based on should_attach config` と出る。異常ではない。
+
+**言語サーバは mason が入れる**（`copilot-language-server`）。起動と接続は copilot.lua が受け持つ。
+mason-lspconfig の自動有効化からは外してある。両方が立てるとクライアントが二重になり、
+後から起動した側が先客を落として `exit code 143` の警告が出る。
+
+サーバは 545MB ある。うまく動かないときは `~/.local/state/nvim/copilot-lua.log` を見る。
 
 **止めているのは自動表示だけ**で、補完そのものは働いている。`<C-Space>` を押せばいつでも開く。
 
