@@ -389,7 +389,9 @@ return {
           },
           lualine_x = {
             macro,
-            { 'searchcount', color = { fg = dim() } },
+            -- 検索の件数。色は lua/config/highlights.lua が決める。
+            -- cmdheight = 0 ではコマンド行に出ないため、ここが唯一の表示になる
+            { 'searchcount', color = 'LualineSearchCount' },
             lsp,
             { 'filetype', colored = false, color = { fg = dim() } },
           },

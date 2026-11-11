@@ -72,6 +72,16 @@ opt.fillchars:append({ diff = ' ' })
 opt.diffopt:append('foldcolumn:0')
 opt.winborder = 'rounded' -- Neovim 0.11+ : フローティングウィンドウの枠を一括指定
 
+-- コマンド行の1行を常時空けておかない。
+--
+-- 打っていない間は空白のまま画面の一番下を占めていた。
+-- メッセージは ui2 と noice のどちらも専用の窓へ出すので、空けておく必要がない。
+-- : を打った時だけ入力欄が現れる。
+--
+-- NOTE: 検索の件数はコマンド行に出なくなる（ui2 が描画を止める）。
+-- lualine の searchcount が唯一の表示になるので、そちらを目立たせてある
+opt.cmdheight = 0
+
 -- 折りたたみ（Treesitter の構文木を使う）
 -- foldlevel = 99 なので開いた直後は全て展開済み。za / zc / zo で個別に操作する
 opt.foldmethod = 'expr'

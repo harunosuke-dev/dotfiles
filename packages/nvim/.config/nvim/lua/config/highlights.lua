@@ -554,21 +554,25 @@ function M.quickfix_line()
   end
 end
 
---- 検索の件数（noice が行末に出す `word 1/5`）をマゼンタにする。
+--- 検索の件数（`[3/12]`）をマゼンタにする。
 ---
---- noice は既定で DiagnosticVirtualTextInfo へ回すが、iceberg はそこと String に
---- 同じ色（#89b9c2）を使っており、本文の文字列と見分けが付かない。
+--- iceberg の既定色は String と同じ（#89b9c2）で、本文の文字列と見分けが付かない。
 --- 「検索の表示だ」と一目で分かることを優先し、本文に出ない色相を当てる。
 ---
 --- 色は solarized-osaka から借りて、incline と出どころを揃える。
 --- テーマを変えても同じ色にする。検索の表示だという手掛かりを固定したい。
---- noice 側の定義は hi def link なので、こちらが明示すれば上書きされない
+---
+--- 出る場所は2つある。noice は一致行の末尾へ virtual text で出し、
+--- 組み込みの ui2 はコマンド行へ出す。後者は cmdheight = 0 だと描かれないため、
+--- lualine の成分を主役にしてどちらの構成でも同じ色で見えるようにする
 function M.search_count()
   local ok, palette = pcall(require, 'solarized-osaka.colors')
   if not ok then
     return
   end
-  vim.api.nvim_set_hl(0, 'NoiceVirtualText', { fg = palette.setup().magenta300 })
+  local magenta = palette.setup().magenta300
+  vim.api.nvim_set_hl(0, 'NoiceVirtualText', { fg = magenta })
+  vim.api.nvim_set_hl(0, 'LualineSearchCount', { fg = magenta })
 end
 
 --- キーワードをイタリックにする。
