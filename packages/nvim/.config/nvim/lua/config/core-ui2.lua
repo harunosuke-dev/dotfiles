@@ -25,7 +25,6 @@ local TARGETS = {
   lua_print = 'msg',
   bufwrite = 'msg',
   undo = 'msg',
-  quickfix = 'msg',
   wmsg = 'msg',
   shell_ret = 'msg',
   progress = 'msg',
@@ -49,6 +48,9 @@ local TARGETS = {
   wildlist = 'cmd',
   typed_cmd = 'cmd',
   confirm = 'cmd',
+  -- ]q / [q を連打するため、右下の小窓だと点滅し続ける。
+  -- 素の Vim と同じく、コマンド行で上書きさせる
+  quickfix = 'cmd',
 }
 
 --- ui2 を使う構成かどうか
