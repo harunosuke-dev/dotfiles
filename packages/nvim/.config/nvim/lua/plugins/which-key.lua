@@ -55,6 +55,8 @@ return {
       { '<leader>w', group = '[W]indow' },
       { '<leader>x', group = 'Lists that stay open' },
       { '<leader>y', group = '[Y]ank the location' },
+      -- よく押すものを1打鍵短くするための段。leader の待ち時間も無い
+      { ';', group = 'Shortcuts for the most used' },
       { ']', group = 'Next' },
       { '[', group = 'Prev' },
     },

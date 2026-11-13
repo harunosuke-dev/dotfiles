@@ -271,6 +271,18 @@ return {
     -- リポジトリ全体。サブディレクトリで開いていてもルートから探せる
     { '<leader>fF', find_files(scope_root), desc = '[F]ind [F]ile in the git root' },
     { '<leader>fG', find_grep(scope_root), desc = '[F]ind by [G]rep in the git root' },
+
+    -- 一番よく押すものだけ ; に寄せる。<Space> より1打鍵短く、待ち時間も無い。
+    --
+    -- 範囲は git のルート。cwd は <Space>fp が tcd で揃えるため普段は同じだが、
+    -- scope_root はバッファから .git を探すので、submodule やサブディレクトリから
+    -- 開いた時もそのファイルのリポジトリに付く。
+    --
+    -- NOTE: ; と , は flash が f/t の繰り返しに使っている。
+    -- flash は既に張られているキーを奪わないので衝突しない（char.lua:108）
+    { ';f', find_files(scope_root), desc = 'Find a file in the git root' },
+    { ';r', find_grep(scope_root), desc = 'Grep in the git root' },
+    { ';;', '<cmd>FzfLua resume<cr>', desc = 'Reopen the last picker' },
     -- 手元のプロジェクトをまとめて横断する。別のリポジトリの書き方を探す時
     { '<leader>Ff', find_files(scope_projects), desc = '[F]ind [F]ile across projects' },
     { '<leader>Fg', find_grep(scope_projects), desc = '[F]ind by [G]rep across projects' },

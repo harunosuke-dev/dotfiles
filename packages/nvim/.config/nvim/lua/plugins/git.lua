@@ -151,6 +151,8 @@ return {
 
         map('n', '<leader>hd', file_diff(), '[H]unk [D]iff of this file')
         map('n', '<leader>hD', file_diff('HEAD~'), '[H]unk [D]iff of this file against HEAD~')
+        -- よく押すので ; にも置く。検索の ;f / ;r と同じ段（lua/plugins/finder.lua）
+        map('n', ';d', file_diff(), 'Diff of this file')
 
         -- 表示の切り替え
         map('n', '<leader>ub', gs.toggle_current_line_blame, '[U]I [B]lame : toggle inline')
