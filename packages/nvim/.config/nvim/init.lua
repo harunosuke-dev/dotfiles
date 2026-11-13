@@ -5,8 +5,8 @@ vim.g.maplocalleader = ' '
 
 -- 組み込みのメッセージ UI（vim._core.ui2）を使う。
 --
--- このブランチは noice を外せるかを見るためのもので、既定で有効にしてある。
--- noice と見比べる時だけ NVIM_UI2=0 nvim で起動する。
+-- noice の代わり。NVIM_UI2=0 nvim で起動した時だけ noice に戻る。
+-- ui2 は private な名前空間にあり、本体の更新で壊れうるため逃げ道を残す。
 -- プラグインの spec から見えるよう、lazy より前に決める
 vim.g.core_ui2 = vim.env.NVIM_UI2 ~= '0'
 

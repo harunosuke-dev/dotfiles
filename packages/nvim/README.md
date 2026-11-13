@@ -143,6 +143,24 @@ Copilot の言語サーバもここに含まれる。認証だけは `:Copilot a
 
 `:lsp restart` だけでは `after/lsp/*.lua` の変更を拾わない（`vim.lsp.config` が解決済みの設定をキャッシュするため）。`restart` はサーバが固まった時の復帰用。
 
+### メッセージとコマンドラインの表示
+
+**組み込みの `vim._core.ui2` を使っている。** Neovim 0.12 から入った実験的な機能で、メッセージとコマンドラインを専用の窓に出す。
+振り分けは `lua/config/core-ui2.lua` の `TARGETS` にある。
+
+| 窓 | 出るもの | 場所 |
+|---|---|---|
+| `cmd` | 検索、補完、確認、quickfix の移動 | コマンド行 |
+| `msg` | `:w` の結果、undo、警告、LSP の進捗 | 右下の小窓。4秒で消える |
+| `pager` | エラー、shell の出力、`:ls` などの一覧 | 広い窓。消えない |
+| `dialog` | 入力を待つ問いかけ | 中央 |
+
+入力欄は `tiny-cmdline.nvim` が画面の上から 25% の位置へ動かす。検索（`/` `?`）は最下行のまま。
+`cmdheight = 0` でも検索中だけは本体が最下行を1行取るので、浮かせるとその行が空白のまま残るため。
+
+**`NVIM_UI2=0 nvim` で noice に戻る。** `vim._core` は private な名前空間で、本体の更新で壊れうる。
+戻した時は検索の件数が一致行の末尾に出て、コマンドラインの表示も noice のものになる。
+
 ---
 
 ## 使い方
@@ -869,6 +887,7 @@ prefix を押してから操作する。ペインが画面の分割、ウィン�
 | `<Space>gb` | **G**it **B**ranch — ブランチを切り替え |
 | `<Space>mp` | **M**arkdown **P**review — ブラウザで確認 |
 | `<Space>nh` | **N**otification **H**istory — 通知の履歴 |
+| `<Space>nm` | **N**otification **M**essages — :messages |
 | `<Space>uh` | **U**I **H**ints — インレイヒント |
 | `<Space>ub` | **U**I **B**lame — 行ブレーム |
 | `<Space>uq` | **U**I **Q**uickfix — 一覧の開閉 |
@@ -983,9 +1002,10 @@ prefix を押してから操作する。ペインが画面の分割、ウィン�
 | `<Space>fk` | キーマップ全体を検索 |
 | `<Space>fc` | カラースキームを切り替え（プレビュー付き） |
 | `<Space>fz` | fzf-lua の全ピッカーから選ぶ |
-| `<Space>nh` | 通知・メッセージの履歴 |
-| `<Space>nl` / `<Space>ne` | 直前の通知 / エラーだけ |
+| `<Space>nh` | 通知の履歴 |
+| `<Space>nm` | `:messages`（メッセージの履歴） |
 | `<Space>nd` | 通知を全部消す |
+| `g<` | 直前のメッセージを全文で見る |
 | `<Space>sn*` | package.json の依存バージョン操作 |
 
 コマンドで使うもの。

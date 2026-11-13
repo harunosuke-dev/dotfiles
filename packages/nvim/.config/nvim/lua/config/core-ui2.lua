@@ -1,10 +1,13 @@
 --- 組み込みのメッセージ UI（vim._core.ui2）を使う。
 ---
---- noice を外せるかを見るためのもの。このブランチでは既定で有効で、
---- NVIM_UI2=0 で起動した時だけ noice に戻る。
+--- noice の代わり。NVIM_UI2=0 で起動した時だけ noice に戻る。
 ---
 --- ui2 は 0.12 で入った実験的な機能で、cmdline とメッセージを専用の窓へ出す。
---- noice と同時には動かない（どちらも ext_messages を取る）
+--- noice と同時には動かない（どちらも ext_messages を取る）。
+---
+--- WARNING: vim._core は private な名前空間で、本体の更新で名前や引数が
+--- 変わりうる。tiny-cmdline も同じ API を読んでいるので同時に壊れる。
+--- noice は spec を残してあり、NVIM_UI2=0 で戻せる
 local M = {}
 
 --- メッセージの行き先。ui2 は4つの窓を持ち、kind ごとに振り分けられる。
