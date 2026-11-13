@@ -28,8 +28,8 @@ return {
         -- （300 番台）を使い、コメントの中で埋もれないようにする。
         -- error だけ既定で DiagnosticError を見るため、ここで明示して切り離す。
         --
-        -- NOTE: TODO は検索の件数（NoiceVirtualText）と同じ magenta300 になる。
-        -- 出る場所が違うので取り違えない
+        -- NOTE: TODO は検索の件数と同じ magenta300 になる。
+        -- 件数はステータスラインに出るので取り違えない
         colors = {
           info = { c.magenta300 }, -- TODO
           hint = { c.cyan300 }, -- NOTE, INFO
