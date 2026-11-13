@@ -195,6 +195,19 @@ map({ 'n', 'x' }, 'x', '"_x', { desc = 'Delete a character without touching regi
 map({ 'n', 'x' }, '<leader>p', '"+p', { desc = '[P]aste the last yank' })
 map({ 'n', 'x' }, '<leader>P', '"+P', { desc = '[P]aste the last yank before' })
 
+-- 選択範囲を構文の単位で広げる・狭める（lua/config/node-select.lua）。
+--
+-- 名前の付いた単位は vaf / via / vi( で掴める。これは名前の無い単位用で、
+-- if ブロックや JSX の要素のように、どのテキストオブジェクトにも当たらない
+-- ところを選ぶために使う
+map({ 'n', 'x' }, '<C-Space>', function()
+  require('config.node-select').expand()
+end, { desc = 'Expand the selection by syntax node' })
+
+map('x', '<BS>', function()
+  require('config.node-select').shrink()
+end, { desc = 'Shrink the selection by syntax node' })
+
 -- プロジェクトの package.json をフロートで覗く。
 -- 依存名やスクリプト名を確かめるだけなら、窓を割るより速い（lua/config/package-json.lua）
 map('n', '<leader>j', function()

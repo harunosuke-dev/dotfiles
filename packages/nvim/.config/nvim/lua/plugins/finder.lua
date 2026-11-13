@@ -277,9 +277,6 @@ return {
     -- 範囲は git のルート。cwd は <Space>fp が tcd で揃えるため普段は同じだが、
     -- scope_root はバッファから .git を探すので、submodule やサブディレクトリから
     -- 開いた時もそのファイルのリポジトリに付く。
-    --
-    -- NOTE: ; と , は flash が f/t の繰り返しに使っている。
-    -- flash は既に張られているキーを奪わないので衝突しない（char.lua:108）
     { ';f', find_files(scope_root), desc = 'Find a file in the git root' },
     { ';r', find_grep(scope_root), desc = 'Grep in the git root' },
     { ';;', '<cmd>FzfLua resume<cr>', desc = 'Reopen the last picker' },

@@ -412,11 +412,6 @@ vim.api.nvim_create_autocmd('FileType', {
   group = qf_group,
   pattern = { 'qf' },
   callback = function(args)
-    -- flash.nvim が <CR> をグローバルに奪うため標準動作に戻す。
-    -- quickfix の <CR>（該当箇所へジャンプ）はマッピングではなく Vim 組み込みの
-    -- 挙動なので、グローバルマップがあると上書きされてしまう
-    vim.keymap.set('n', '<CR>', '<CR>', { buffer = args.buf, remap = false, desc = 'Jump to the entry' })
-
     -- q で閉じる。未割り当てだと q がマクロ記録の開始になり、
     -- 一覧を閉じたつもりで記録が始まる事故が起きる。
     --
