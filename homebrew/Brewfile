@@ -29,6 +29,7 @@ brew "ripgrep"  # Fast text search tool (rg)
 brew "bat"  # Cat clone with syntax highlighting
 brew "cmake"  # Cross-platform build system
 brew "fd"  # Simple, fast alternative to find
+brew "ffmpeg"  # Video and audio converter (GIF to mp4 for the blog)
 brew "ghq"  # Git repository manager for organizing cloned repos
 brew "git-lfs"  # Git extension for versioning large files
 brew "jq"  # JSON processor and query tool
