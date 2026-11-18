@@ -562,9 +562,9 @@ end
 --- 色は solarized-osaka から借りて、incline と出どころを揃える。
 --- テーマを変えても同じ色にする。検索の表示だという手掛かりを固定したい。
 ---
---- 出る場所は2つある。noice は一致行の末尾へ virtual text で出し、
---- 組み込みの ui2 はコマンド行へ出す。後者は cmdheight = 0 だと描かれないため、
---- lualine の成分を主役にしてどちらの構成でも同じ色で見えるようにする
+--- 出る場所は2つある。noice が一致行の末尾へ virtual text で出し、
+--- lualine の searchcount がステータスラインへ出す。
+--- 探している場所から目を離さずに済むのは前者だが、見失った時の保険に両方塗る
 function M.search_count()
   local ok, palette = pcall(require, 'solarized-osaka.colors')
   if not ok then
