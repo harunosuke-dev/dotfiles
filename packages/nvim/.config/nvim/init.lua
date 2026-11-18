@@ -3,13 +3,6 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
--- 組み込みのメッセージ UI（vim._core.ui2）を使う。
---
--- noice の代わり。NVIM_UI2=0 nvim で起動した時だけ noice に戻る。
--- ui2 は private な名前空間にあり、本体の更新で壊れうるため逃げ道を残す。
--- プラグインの spec から見えるよう、lazy より前に決める
-vim.g.core_ui2 = vim.env.NVIM_UI2 ~= '0'
-
 require('config.options')
 require('config.filetype')
 require('config.keymaps')
@@ -21,5 +14,4 @@ require('config.zoom').setup()
 require('config.next_docs').setup()
 require('config.codediff').setup()
 require('config.node-select').setup()
-require('config.core-ui2').setup()
 require('config.lazy')
