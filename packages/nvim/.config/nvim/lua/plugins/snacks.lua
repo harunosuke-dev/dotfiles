@@ -5,6 +5,7 @@
 -- ファイルを分けずここへ集約する。
 --
 --   notifier   通知の描画。noice から view = 'snacks' で呼ばれる
+--   image      画像を開いたときに、画像そのものを描く
 --
 -- 起動画面（dashboard）は持たない。項目がどれも別の入口と重なっていた
 -- （Find File は <Space>ff、Recent Files は <Space>fr、など）。
@@ -26,6 +27,14 @@ return {
         -- それだけでは足りず、長い文が途中で切れる
         width = { min = 30, max = 0.6 },
         height = { min = 1, max = 0.6 },
+      },
+
+      -- 画像を開いたときに、バイナリではなく画像そのものを描く。
+      -- ブログに置く画像や動画を、名前を変える前に中身で見分けるため。
+      -- Ghostty の Kitty graphics protocol で描く。tmux の中では allow-passthrough が要る（dotfiles の tmux.conf）。
+      -- PNG 以外（JPEG、HEIC、動画の 1 コマなど）は ImageMagick で変換してから描く
+      image = {
+        enabled = true,
       },
 
       -- 通知の窓そのものの見た目。notifier の設定とは別枠で、
