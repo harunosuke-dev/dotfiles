@@ -106,12 +106,14 @@ return {
       focus = true, -- 開いたらそのウィンドウにカーソルを移す
     },
     keys = {
-      { '<leader>xx', '<cmd>Trouble diagnostics toggle<cr>', desc = 'Diagnostics list in project' },
+      -- 大小の向きは他のキーに揃える。小文字がこのファイル、大文字が広い方。
+      -- 押す頻度は大文字の方が高いが、一貫性を優先する
       {
-        '<leader>xX',
+        '<leader>xx',
         '<cmd>Trouble diagnostics toggle filter.buf=0<cr>',
         desc = 'Diagnostics list in this file',
       },
+      { '<leader>xX', '<cmd>Trouble diagnostics toggle<cr>', desc = 'Diagnostics list in project' },
       {
         '<leader>xs',
         '<cmd>Trouble symbols toggle win.position=right<cr>',
