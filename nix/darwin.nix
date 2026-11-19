@@ -4,7 +4,7 @@ let
   primaryUser = "papicom";
   userHome = "/Users/${primaryUser}";
 
-  # defaultsだけでは永続化できない設定と、実行時に保存先を決める設定
+  # defaultsだけでは永続化できない設定と、保存先のフォルダを作ってから指す設定
   applyDynamicUserDefaults = pkgs.writeShellScript "apply-dynamic-macos-user-defaults" ''
     # ~/LibraryをFinderで常に表示する。
     /usr/bin/chflags nohidden "${userHome}/Library"
@@ -27,19 +27,10 @@ let
       '{"UserKeyMapping":[{"HIDKeyboardModifierMappingSrc":0x700000039,"HIDKeyboardModifierMappingDst":0x7000000E4},{"HIDKeyboardModifierMappingSrc":0x7000000E7,"HIDKeyboardModifierMappingDst":0x70000006D}]}' \
       >/dev/null 2>&1 || true
 
-    # Google Driveがマウント済みならその中へ、なければローカルへ保存する。
-    screenshotDir=""
-    for googleDriveDir in "${userHome}/Library/CloudStorage"/GoogleDrive-*; do
-      for driveRoot in "My Drive" "マイドライブ"; do
-        if [ -d "$googleDriveDir/$driveRoot" ]; then
-          screenshotDir="$googleDriveDir/$driveRoot/Screenshot"
-          break 2
-        fi
-      done
-    done
-    if [ -z "$screenshotDir" ]; then
-      screenshotDir="${userHome}/Screenshot"
-    fi
+    # スクリーンショットはローカルへ保存する。
+    # クラウドの中だと道筋が長く（日本語とアカウント名が入る）、同期の途中のこともあり、
+    # 保存してすぐブログのフォルダへ移すときに扱いにくい
+    screenshotDir="${userHome}/Pictures/Screenshots"
     /bin/mkdir -p "$screenshotDir"
     /usr/bin/defaults write com.apple.screencapture location "$screenshotDir"
   '';
