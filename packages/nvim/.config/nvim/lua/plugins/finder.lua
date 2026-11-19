@@ -213,10 +213,10 @@ return {
   'ibhagwan/fzf-lua',
   cmd = 'FzfLua',
   keys = {
-    -- ファイル系。範囲は4段階で、キーの大小が広さを表す。
+    -- ファイル系。範囲は4段階。
     --
+    --   ;f / ;r   .git のルート（一番よく使うので ; に置く）
     --   ff / fg   今の場所（cwd）
-    --   fF / fG   .git のルート
     --   Ff / Fg   手元のプロジェクト全部
     --   FF / FG   ホーム全体
     { '<leader>ff', find_files(scope_cwd), desc = '[F]ind [F]ile in the current directory' },
@@ -234,7 +234,7 @@ return {
     -- 時は、まず fp で移動先を選ぶ。zoxide はシェルで z を使うたびに訪問先を
     -- 覚えているので、よく行く場所ほど上に出る。
     --
-    -- fF / fG はホーム以下を直接なめる。設定ファイルや別プロジェクトを
+    -- FF / FG はホーム以下を直接なめる。設定ファイルや別プロジェクトを
     -- 「どこにあるか思い出せないまま」探す時用。
     {
       '<leader>fp',
@@ -268,9 +268,6 @@ return {
       end,
       desc = '[F]ind [P]roject : cd and browse',
     },
-    -- リポジトリ全体。サブディレクトリで開いていてもルートから探せる
-    { '<leader>fF', find_files(scope_root), desc = '[F]ind [F]ile in the git root' },
-    { '<leader>fG', find_grep(scope_root), desc = '[F]ind by [G]rep in the git root' },
 
     -- 一番よく押すものだけ ; に寄せる。<Space> より1打鍵短く、待ち時間も無い。
     --
