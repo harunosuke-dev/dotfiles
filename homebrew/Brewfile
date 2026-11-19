@@ -32,6 +32,7 @@ brew "fd"  # Simple, fast alternative to find
 brew "ffmpeg"  # Video and audio converter (GIF to mp4 for the blog)
 brew "ghq"  # Git repository manager for organizing cloned repos
 brew "git-lfs"  # Git extension for versioning large files
+brew "imagemagick"  # Image converter (used by snacks.nvim to show non-PNG images)
 brew "jq"  # JSON processor and query tool
 brew "lazygit"  # Terminal UI for git commands
 brew "libssh2"  # C library implementing SSH2 protocol
