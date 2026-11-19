@@ -114,6 +114,9 @@ return {
         desc = 'Diagnostics list in this file',
       },
       { '<leader>xX', '<cmd>Trouble diagnostics toggle<cr>', desc = 'Diagnostics list in project' },
+      -- 一番よく押すのはプロジェクト全体の方だが、上の規則では大文字になる。
+      -- 頻度は ; 側で取り返す（lua/plugins/finder.lua の ;f / ;r と同じ段）
+      { ';e', '<cmd>Trouble diagnostics toggle<cr>', desc = 'Diagnostics list in project' },
       {
         '<leader>xs',
         '<cmd>Trouble symbols toggle win.position=right<cr>',
