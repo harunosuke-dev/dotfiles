@@ -72,8 +72,7 @@ setup.sh
 6. `setup-mise.sh` - 開発環境
 7. `setup-zinit.sh` - シェル環境
 8. `setup-bat.sh` - テーマキャッシュ
-9. `setup-nvim.sh` - エディタ設定
-10. `setup-login.sh` - ログイン
+9. `setup-login.sh` - ログイン
 
 各ステップは独立して実行され、失敗しても後続ステップを試します。最後のサマリーに成功・スキップ・失敗が表示され、失敗が1件以上あれば全体の終了コードは非0になります。
 
@@ -304,12 +303,11 @@ source ~/.zshenv && source "$XDG_CONFIG_HOME/zsh/.zshrc"
 
 ---
 
-### `setup-nvim.sh` & `setup-login.sh`
+### `setup-login.sh`
 
-**概要**: エディタとログインシェルの設定
+**概要**: ログインシェルの設定（Neovim の設定は `packages/nvim` を stow で配るので、専用のスクリプトは無い）
 
 ```bash
-setup-nvim.sh   # Neovim設定
 setup-login.sh  # ログインシェル設定  
 ```
 
@@ -712,7 +710,6 @@ brew bundle check
 │   ├── setup-apt.sh      # APTパッケージ管理（Linux用）
 │   ├── setup-mise.sh     # 開発環境管理
 │   ├── setup-zinit.sh    # シェル環境
-│   ├── setup-nvim.sh     # Neovim設定
 │   ├── setup-login.sh    # ログインシェル設定
 │   ├── common.sh         # 共通設定
 │   └── utils.sh          # ユーティリティ関数
