@@ -1,0 +1,17 @@
+-- リーダーキーは何よりも先に定義する
+-- （プラグイン読み込み後に定義すると、既に登録済みのマップが古い値のままになる）
+vim.g.mapleader = ' '
+vim.g.maplocalleader = ' '
+
+require('config.options')
+require('config.filetype')
+require('config.keymaps')
+require('config.autocmds')
+require('config.commands')
+require('config.snippets').setup()
+require('config.practice').setup()
+require('config.zoom').setup()
+require('config.next_docs').setup()
+require('config.codediff').setup()
+require('config.node-select').setup()
+require('config.lazy')

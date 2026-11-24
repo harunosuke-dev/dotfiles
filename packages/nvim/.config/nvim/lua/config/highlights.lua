@@ -1,0 +1,763 @@
+-- iceberg 専用の配色調整。
+--
+-- 面は塗らない。本文・左端の列・パンくず・フロートはすべてテーマの既定に任せ、
+-- 端末の背景を透けさせる（M.transparent()）。ここで足すのは文字の明度の階層と、
+-- カーソル行の帯だけ。
+--
+-- 呼び出し側は M.setup() を一度だけ実行する。
+-- gitsigns のように後から自前のハイライトを定義するプラグインからは
+-- M.apply() を直接呼ぶ（下のコメント参照）
+local M = {}
+
+local ICEBERG = {
+  cursor = 0x1f2233, -- カーソル行の帯。素の iceberg の行番号の列の色
+  breadcrumb = 0x7d8296, -- 補助的な文字。本文より一段落とす
+  linenr = 0x454d73, -- ステータスラインの文字。素の iceberg の行番号と同じ明度
+  faint = 0x555b73, -- 補助的な文字。breadcrumb よりさらに一段落とす
+  select = 0x3a4160, -- 一覧の中でカーソルがある行。反転をやめる代わりに敷く
+}
+
+--- 差分表示（:diffthis / <leader>hd）の配色。
+---
+--- テーマに依らず同じ色を使う。差分は「何が変わったか」を読むための表示で、
+--- カラースキームごとに見え方が変わると読み方を切り替えることになるため。
+---
+--- 色は Claude Code の画面から実測した値。バイナリ内の定義は
+--- rgb(122,41,54) / rgb(34,92,43) だが、実際の表示はこの値になる。
+--- 端末側の扱いが絡んでいるらしく、定義から表示値は導けなかったため実測を採る。
+---
+--- 変わった文字（DiffText）は地より一段明るくして、行のどこが変わったかを示す。
+--- 行を丸ごと書き換えた時はその行全体がこの色になるが、「全部変わった」という
+--- 意味なので筋は通る。行の追加は DiffAdd になるのでこの色にはならない。
+---
+--- 文字色は変わった部分（DiffText）にだけ与える。iceberg の構文の色は
+--- 彩度の低い淡色で、暗く彩度の高い赤や緑の上では沈んで読みにくい。
+--- 行全体には与えない。与えるとその行が一色に潰れて構文が読めなくなる
+local DIFF = {
+  add = 0x015f00, -- 追加された行・変更行の地（新しい側）
+  delete = 0x5f0000, -- 削除された行・変更行の地（古い側）
+  add_word = 0x018700, -- 変更行の中で実際に変わった部分（新しい側）
+  delete_word = 0x870000, -- 変更行の中で実際に変わった部分（古い側）
+  fill = 0x7a3a3a, -- 削除側に並ぶ埋め文字。今は空白なので実質使わない
+  word_fg = 0xffffff, -- 変わった部分の文字色。地の色に負けないよう白にする
+}
+
+--- 背景が明るい配色かどうかを、色そのものの明度から判定する
+local function is_light(color)
+  local r = math.floor(color / 65536) % 256
+  local g = math.floor(color / 256) % 256
+  local b = color % 256
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 128
+end
+
+--- 文字色は元の指定を保ったまま、背景色だけ差し替える
+local function set(group, bg, extra)
+  local current = vim.api.nvim_get_hl(0, { name = group, link = false })
+  vim.api.nvim_set_hl(0, group, vim.tbl_extend('force', { fg = current.fg, bg = bg }, extra or {}))
+end
+
+--- 色を暗い方へ寄せる。ratio が 0.75 なら 25% 沈む
+--- ratio が 1 より大きければ持ち上げる方に働く。桁溢れしないよう頭を押さえる
+local function dim(color, ratio)
+  local function channel(value)
+    return math.min(255, math.floor(value % 256 * ratio))
+  end
+  local r = channel(math.floor(color / 65536))
+  local g = channel(math.floor(color / 256))
+  local b = channel(color)
+  return r * 65536 + g * 256 + b
+end
+
+--- 記号（診断・gitsigns・TODO）のハイライトから背景色を外す。
+---
+--- これらは記号の列と同じ背景色を持たされている。列の色を変えたり透過させたり
+--- すると、記号のある行だけ左端の色が変わり、カーソル行でも光らない
+--- （kanagawa-dragon の GitSignsChange など）。
+--- 背景を外して SignColumn / CursorLineSign から受け継がせる。
+---
+--- 末尾が Ln のものは「行全体の着色」用で、記号の列とは役割が違うため除外する
+local function clear_sign_backgrounds()
+  for name in pairs(vim.api.nvim_get_hl(0, {})) do
+    local is_gutter_sign = name:find('Sign')
+      and name ~= 'SignColumn'
+      and name ~= 'CursorLineSign'
+      and not name:match('Ln$')
+    if is_gutter_sign then
+      -- link = false で解決してから見る。GitSignsChange のように
+      -- 別グループ（GitGutterChange）へのリンクとして定義されているものがあり、
+      -- リンクのまま判定すると背景色の有無が分からない
+      local resolved = vim.api.nvim_get_hl(0, { name = name, link = false })
+      if resolved.bg ~= nil then
+        resolved.bg = nil
+        -- nvim_get_hl は default = true を含めて返す。そのまま渡すと
+        -- 「既存定義があれば何もしない」書き込みになり、上書きできない
+        resolved.default = nil
+        vim.api.nvim_set_hl(0, name, resolved)
+      end
+    end
+  end
+end
+
+--- barbar の「選択中のタブ」から面を外す。
+---
+--- barbar は選択中のタブの色を TabLineSel から作る（barbar/highlight.lua）。
+--- 多くのテーマは TabLineSel を「暗い文字 + 明るい面」の反転で組んでおり
+--- （iceberg は #17181c / #828597）、他の帯が透けているこの設定の中では、
+--- そこだけ板が貼られたように浮く。
+---
+--- 面を外し、今どこにいるかは左端のバー（Special の色）と太字で示す。
+--- barbar 本来の示し方でもある。
+---
+--- 面の上に置くための暗い文字色は、面を外すと地に沈む。TabLineSel と同じ値の
+--- ものだけ本文の明るさへ戻し、診断や差分のように自前の色を持つものは残す。
+---
+--- BufferCurrent だけでは足りない。変更マークや診断も同じ面を持っており、
+--- 外し忘れると名前の周りだけ地が残って途切れて見える。
+--- ファイル種別アイコンの色（DevIcon*Current）は barbar が BufferCurrent から
+--- 作り直すため、ここでは触らなくてよい
+function M.flat_tabline()
+  local sel = vim.api.nvim_get_hl(0, { name = 'TabLineSel', link = false })
+  local normal = vim.api.nvim_get_hl(0, { name = 'Normal', link = false })
+
+  for name in pairs(vim.api.nvim_get_hl(0, {})) do
+    if name:match('^BufferCurrent') then
+      local resolved = vim.api.nvim_get_hl(0, { name = name, link = false })
+      -- リンク先がまだ定義されていない段階では空が返る。空のまま書き戻すと
+      -- リンクを潰した空の定義が残り、barbar が後から色を入れても効かなくなる
+      if next(resolved) ~= nil then
+        if resolved.fg == sel.fg then
+          resolved.fg = normal.fg
+          resolved.bold = true
+        end
+        resolved.bg = nil
+        -- nvim_get_hl は default = true を含めて返す。そのまま渡すと
+        -- 「既存定義があれば何もしない」書き込みになり、上書きできない
+        resolved.default = nil
+        vim.api.nvim_set_hl(0, name, resolved)
+      end
+    end
+  end
+end
+
+function M.apply()
+  if vim.g.colors_name ~= 'iceberg' then
+    return -- 他のテーマには手を入れない
+  end
+
+  -- iceberg / iceberg-dark / iceberg-light はどれも colors_name が 'iceberg' に
+  -- なるため名前では区別できない。暗い配色にだけ適用する。
+  --
+  -- 背景を透過させていると Normal に bg が無く、色から明暗を判定できない。
+  -- その場合は 'background' の値を見る
+  local normal = vim.api.nvim_get_hl(0, { name = 'Normal', link = false })
+  local light = normal.bg and is_light(normal.bg) or (not normal.bg and vim.o.background == 'light')
+  if light then
+    return
+  end
+
+  -- 非アクティブなウィンドウは M.build_inactive() の名前空間で沈める。
+  -- ここは背景を敷かないように戻すだけ。敷くと透過が切れる
+  vim.api.nvim_set_hl(0, 'NormalNC', { fg = normal.fg })
+
+  -- カーソル行。本文・行番号・記号・折りたたみを同じ色で揃えて1本の帯にする。
+  -- 面を塗る指定はこれだけ残す。位置を示すためのもので、地の色ではない
+  set('CursorLine', ICEBERG.cursor)
+  set('CursorLineNr', ICEBERG.cursor, { bold = true })
+  set('CursorLineSign', ICEBERG.cursor)
+  set('CursorLineFold', ICEBERG.cursor)
+
+  -- 補完メニュー（blink.cmp）で選んでいる行も同じ色にする。
+  -- 既定は PmenuSel を継いで #5c638a になり、透過した面の上で青く浮く。
+  -- 「今いる場所」の示し方を本文と揃える
+  set('BlinkCmpMenuSelection', ICEBERG.cursor)
+  set('BlinkCmpDocCursorLine', ICEBERG.cursor)
+
+  -- 記号（診断・gitsigns・TODO）の背景を外して、カーソル行の帯を通す
+  clear_sign_backgrounds()
+
+  -- 非選択のタブ。番号は NonText（#252941）から作られ、端末の地に対して
+  -- ほとんど読めない。:BufferGoto の目印なので faint まで上げる。
+  -- 閉じるボタンはファイル名と同じ明るさで並ぶと数が多く煩いので、同じだけ落とす
+  vim.api.nvim_set_hl(0, 'BufferInactiveIndex', { fg = ICEBERG.faint })
+  vim.api.nvim_set_hl(0, 'BufferInactiveBtn', { fg = ICEBERG.faint })
+
+  -- 枠の左上・右下に出る見出し。文字だけ橙から補助的な色へ落とす
+  vim.api.nvim_set_hl(0, 'FloatTitle', { fg = ICEBERG.breadcrumb })
+  vim.api.nvim_set_hl(0, 'FloatFooter', { fg = ICEBERG.faint })
+  -- ステータスラインの文字色だけここで決める。背景は M.match_statusline()
+  -- がテーマを問わず本文に合わせる
+  vim.api.nvim_set_hl(0, 'StatusLine', { fg = ICEBERG.linenr })
+  vim.api.nvim_set_hl(0, 'StatusLineNC', { fg = ICEBERG.linenr })
+  -- 補完メニュー（blink.cmp）の文字の明るさに階層をつける。
+  --
+  -- 既定はどれも本文と同じ #c7c9d1 で、候補名も種類も出どころも同列に
+  -- 並んで主張が強い。読む必要があるのは「候補名のどこが一致したか」で、
+  -- 種類や出どころは目に入れば足りる。
+  --
+  --   一致した部分  本文と同じ明るさ … ここだけ拾えばよい
+  --   候補名        一段落とす
+  --   種類・詳細    さらに落とす
+  local normal_fg = vim.api.nvim_get_hl(0, { name = 'Normal', link = false }).fg
+  vim.api.nvim_set_hl(0, 'BlinkCmpLabelMatch', { fg = normal_fg, bold = true })
+  vim.api.nvim_set_hl(0, 'BlinkCmpLabel', { fg = ICEBERG.breadcrumb })
+  vim.api.nvim_set_hl(0, 'BlinkCmpDoc', { fg = ICEBERG.breadcrumb })
+  for _, group in ipairs({
+    'BlinkCmpLabelDetail',
+    'BlinkCmpLabelDescription',
+    'BlinkCmpKind',
+    'BlinkCmpSource',
+  }) do
+    vim.api.nvim_set_hl(0, group, { fg = ICEBERG.faint })
+  end
+
+  for _, group in ipairs({
+    '@markup.heading',
+    '@markup.heading.1.markdown',
+    '@markup.heading.2.markdown',
+    '@markup.heading.3.markdown',
+    '@markup.heading.4.markdown',
+    '@markup.heading.5.markdown',
+    '@markup.heading.6.markdown',
+  }) do
+    vim.api.nvim_set_hl(0, group, { fg = normal.fg, bold = true })
+  end
+  -- 表の罫線・区切り・引用など。本文より落として構造だけ見えれば足りる
+  for _, group in ipairs({
+    '@markup.list.markdown',
+    '@markup.quote.markdown',
+    '@punctuation.special.markdown',
+    '@markup.link.label.markdown_inline',
+  }) do
+    vim.api.nvim_set_hl(0, group, { fg = ICEBERG.breadcrumb })
+  end
+
+  -- 数式（$...$）。地の文から浮かせて境目が分かるようにする。
+  -- 中身は明度だけで区別し、区切りの $ にだけ色を付けて範囲を示す。
+  --
+  -- 空行を挟んだ $$...$$ には効かない。Markdown が空行を段落の区切りとして
+  -- 扱うため、そこで latex_block が途切れる。パーサの構造上の制約
+  vim.api.nvim_set_hl(0, '@markup.math', { fg = ICEBERG.breadcrumb })
+  vim.api.nvim_set_hl(0, '@markup.math.markdown_inline', { fg = ICEBERG.breadcrumb })
+  -- 太字にはしない。色だけで十分に区別が付き、$ 1文字を太くしても情報は
+  -- 増えない。区切り記号を強調するのは一般的な慣習とも逆
+  vim.api.nvim_set_hl(0, '@markup.math.delimiter', { fg = 0x8fbf7f })
+  vim.api.nvim_set_hl(0, '@markup.math.delimiter.markdown_inline', { fg = 0x8fbf7f })
+
+  -- 起動画面（snacks の dashboard）。
+  --
+  -- 既定では見出しが Title（#e2a578 橙）、ファイル名が Special（#b5bf82 緑）に
+  -- リンクされており、彩度の高いファイル名の方が見出しより前に出てしまう。
+  -- ディレクトリ部分は NonText（#252941）で本文の背景とほぼ同じ明度になり読めない。
+  --
+  -- 色ではなく明度と太字で区別する。診断以外に色を使わない方針に合わせる。
+  local normal = vim.api.nvim_get_hl(0, { name = 'Normal', link = false })
+  -- 見出しと操作の名前は太字。押せるもの・区切りとして先に目に入るようにする
+  vim.api.nvim_set_hl(0, 'SnacksDashboardTitle', { fg = normal.fg, bold = true })
+  vim.api.nvim_set_hl(0, 'SnacksDashboardDesc', { fg = normal.fg, bold = true })
+  vim.api.nvim_set_hl(0, 'SnacksDashboardHeader', { fg = ICEBERG.breadcrumb })
+  vim.api.nvim_set_hl(0, 'SnacksDashboardFooter', { fg = ICEBERG.faint })
+  vim.api.nvim_set_hl(0, 'SnacksDashboardIcon', { fg = ICEBERG.breadcrumb })
+  vim.api.nvim_set_hl(0, 'SnacksDashboardKey', { fg = ICEBERG.breadcrumb })
+  vim.api.nvim_set_hl(0, 'SnacksDashboardSpecial', { fg = ICEBERG.breadcrumb })
+  -- snacks はパスを「前半のディレクトリ」と「末尾の名前」に分けて塗る。
+  -- File はファイル名とプロジェクトのフォルダ名の両方に当たるため、ここを
+  -- 本文と同じ明るさにして、パスの前半だけを背景へ退かせる。
+  -- 見出しは太字なので、明るさが並んでも階層は保たれる
+  vim.api.nvim_set_hl(0, 'SnacksDashboardFile', { fg = normal.fg })
+  vim.api.nvim_set_hl(0, 'SnacksDashboardDir', { fg = ICEBERG.breadcrumb })
+
+  -- 進捗の本文（Loading workspace など）が読めない問題。
+  --
+  -- noice は既定で NonText を継承させる。iceberg の NonText は #252941 で、
+  -- フロートの背景 #1f2233 とほぼ同じ明度のため文字が沈む。
+  -- NonText は `~` を目立たせないための色であって、読ませる文字には向かない
+  vim.api.nvim_set_hl(0, 'NoiceLspProgressTitle', { fg = ICEBERG.breadcrumb })
+
+  -- 色が出揃った後に、非アクティブ用の複製を作り直す
+  M.build_inactive()
+end
+
+--- 非アクティブなウィンドウ用の色。窓ごとの名前空間として持つ。
+---
+--- 背景を敷いて見分ける方法は透過と両立しない。全グループの複製を作って
+--- 色だけ沈め、nvim_win_set_hl_ns で窓に当てる（lua/config/autocmds.lua）。
+---
+--- NormalNC の文字色を落とすやり方では足りない。構文色を持つ文字は自分の
+--- 色で描かれるため沈まず、非アクティブ側の local が rgb(133,160,199) の
+--- ままだった（実測）。名前空間なら構文色ごと沈む
+local inactive_ns
+
+--- 45% 沈める。コントラストは 12.10 対 3.93 で 3.1 倍の開き
+local INACTIVE = 0.55
+
+--- 非アクティブなウィンドウでは背景を持たせないグループ。
+--- カーソル行の帯とカーソル下の単語（illuminate）は、今読んでいる窓だけでよい
+local INACTIVE_NO_BG = {
+  CursorLine = true,
+  CursorLineNr = true,
+  CursorLineSign = true,
+  CursorLineFold = true,
+  IlluminatedWordText = true,
+  IlluminatedWordRead = true,
+  IlluminatedWordWrite = true,
+}
+
+function M.inactive_ns()
+  if not inactive_ns then
+    inactive_ns = vim.api.nvim_create_namespace('user_inactive')
+  end
+  return inactive_ns
+end
+
+function M.build_inactive()
+  local ns = M.inactive_ns()
+  for name in pairs(vim.api.nvim_get_hl(0, {})) do
+    local hl = vim.api.nvim_get_hl(0, { name = name, link = false })
+    -- nvim_get_hl は default = true を含めて返す。そのまま渡すと
+    -- 「既存定義があれば何もしない」書き込みになり、上書きできない
+    hl.default = nil
+    if hl.fg then
+      hl.fg = dim(hl.fg, INACTIVE)
+    end
+    if hl.bg then
+      hl.bg = dim(hl.bg, INACTIVE)
+    end
+    if INACTIVE_NO_BG[name] then
+      hl.bg = nil
+    end
+    vim.api.nvim_set_hl(ns, name, hl)
+  end
+end
+
+--- どのテーマでも、面を塗らずに端末の背景を透けさせる。
+---
+--- 対象は「UI の地」として塗られているものすべて。本文・左端の列・
+--- ステータスライン・パンくずに加えて、フロートやポップアップの面、
+--- 分割の境界、タブ、メッセージ行まで含める。
+---
+--- 入れないものが3つある。
+---   NormalNC       非アクティブなウィンドウの減光（M.build_inactive() が沈める）
+---   *Sel / WildMenu ポップアップの中で選んでいる行。CursorLine と同じ役割。
+---                  TabLineSel も同じ。多くのテーマは「暗い文字 + 明るい面」で
+---                  組んでおり（iceberg は #17181c、tokyonight は #1b1d2b）、
+---                  面だけ外すと文字が地に沈んで選択中のタブが読めなくなる
+---   Cursor / TermCursor カーソルそのもの
+local TRANSPARENT_GROUPS = {
+  -- 本文と左端の列
+  'Normal',
+  'SignColumn',
+  'LineNr',
+  'LineNrAbove',
+  'LineNrBelow',
+  'FoldColumn',
+  'EndOfBuffer',
+  'Conceal',
+  -- 窓の縁
+  'StatusLine',
+  'StatusLineNC',
+  'StatusLineTerm',
+  'StatusLineTermNC',
+  'WinBar',
+  'WinBarNC',
+  'WinSeparator',
+  'VertSplit',
+  'TabLine',
+  'TabLineFill',
+  'ToolbarLine',
+  'ToolbarButton',
+  -- フロート（K のホバー・which-key・noice など）
+  'NormalFloat',
+  'FloatBorder',
+  'FloatTitle',
+  'FloatFooter',
+  'FloatShadow',
+  'FloatShadowThrough',
+  'DiagnosticFloatingError',
+  'DiagnosticFloatingWarn',
+  'DiagnosticFloatingInfo',
+  'DiagnosticFloatingHint',
+  'DiagnosticFloatingOk',
+  -- ポップアップメニュー。軌道（Sbar）は透過させ、つまみ（Thumb）だけ
+  -- M.apply() で色を当てて残す
+  'Pmenu',
+  'PmenuBorder',
+  'PmenuExtra',
+  'PmenuKind',
+  'PmenuSbar',
+  'PmenuShadow',
+  'PmenuShadowThrough',
+  -- メッセージ行
+  'MsgArea',
+  'MsgSeparator',
+  'ErrorMsg',
+  'WarningMsg',
+  'StderrMsg',
+  'StdoutMsg',
+  'Error',
+}
+
+--- 差分表示の配色を当てる。テーマに依らず同じ色にする。
+---
+--- 追加は緑・削除は赤という git の慣例に寄せる。Neovim は「変更行」という
+--- 状態を持つが、git や GitHub は変更を「削除（赤）+ 追加（緑）」の組で表すので、
+--- 変更行の地と変わった文字は窓ごとに赤と緑へ振り分ける
+--- （lua/config/autocmds.lua が winhighlight で読み替える）。
+--- ここで定義する Old / New はその読み替え先。
+---
+--- 行全体を塗るものには文字色を指定しない。差分の中でも構文強調が見えた方が
+--- 読みやすい。実際に変わった文字だけは白くして浮かせる。数文字ぶんしか
+--- 塗られないので、構文の色を失う代償が小さい
+function M.diff()
+  -- DiffAdd は「git で追加された行」ではなく「この窓にだけあって相手の窓には
+  -- 無い行」の意味。削除した行は古い側にしか無いので、素のままだと古い側で
+  -- 緑になり、git の慣例と逆を向く。これも左右へ振り分ける
+  vim.api.nvim_set_hl(0, 'DiffAdd', { bg = DIFF.add })
+  vim.api.nvim_set_hl(0, 'DiffAddOld', { bg = DIFF.delete })
+  vim.api.nvim_set_hl(0, 'DiffAddNew', { bg = DIFF.add })
+  vim.api.nvim_set_hl(0, 'DiffChange', { bg = DIFF.delete })
+  vim.api.nvim_set_hl(0, 'DiffChangeOld', { bg = DIFF.delete })
+  vim.api.nvim_set_hl(0, 'DiffChangeNew', { bg = DIFF.add })
+  vim.api.nvim_set_hl(0, 'DiffText', { bg = DIFF.delete_word, fg = DIFF.word_fg })
+  vim.api.nvim_set_hl(0, 'DiffTextOld', { bg = DIFF.delete_word, fg = DIFF.word_fg })
+  vim.api.nvim_set_hl(0, 'DiffTextNew', { bg = DIFF.add_word, fg = DIFF.word_fg })
+  vim.api.nvim_set_hl(0, 'DiffTextAdd', { bg = DIFF.add_word, fg = DIFF.word_fg })
+  -- 行が無い側に並ぶ埋め。相手側の色を持たせると「左に赤・右に緑」が崩れるので
+  -- 何も塗らない。行が揃って表示されるため、空白でも欠けている場所は分かる
+  vim.api.nvim_set_hl(0, 'DiffDelete', { fg = DIFF.fill })
+
+  -- mini.diff のオーバーレイで消えた行に出すもの（<Space>gd）。
+  --
+  -- 既定では DiffDelete を継ぐが、あちらは埋め草用で文字色しか持たない。
+  -- ここに出るのは実際に消えた中身なので、codediff の削除側（DiffChangeOld）と
+  -- 同じ帯にする
+  vim.api.nvim_set_hl(0, 'MiniDiffOverDelete', { bg = DIFF.delete })
+end
+
+--- カーソル行の帯を左端の列まで伸ばす。
+---
+--- 多くのテーマは本文の部分（CursorLine）にしか色を持たせておらず、行番号・
+--- 記号・折りたたみの列で帯が途切れる。CursorLine の背景をそれらにも与えて
+--- 1本の帯にする。
+---
+--- 文字色はテーマの指定をそのまま残す。行番号だけ色を変えて現在行を示す
+--- テーマがあるため
+function M.match_cursorline()
+  local cursor = vim.api.nvim_get_hl(0, { name = 'CursorLine', link = false })
+  if not cursor.bg then
+    return
+  end
+  for _, group in ipairs({ 'CursorLineNr', 'CursorLineSign', 'CursorLineFold' }) do
+    local current = vim.api.nvim_get_hl(0, { name = group, link = false })
+    current.bg = cursor.bg
+    -- nvim_get_hl は default = true を含めて返す。そのまま渡すと
+    -- 「既存定義があれば何もしない」書き込みになり、上書きできない
+    current.default = nil
+    vim.api.nvim_set_hl(0, group, current)
+  end
+end
+
+function M.transparent()
+  if not vim.g.transparent_background then
+    return
+  end
+  for _, group in ipairs(TRANSPARENT_GROUPS) do
+    local current = vim.api.nvim_get_hl(0, { name = group, link = false })
+    current.bg = 'NONE'
+    -- 反転（reverse）だけは残さない。fg と bg を入れ替える指定なので、
+    -- 背景を外した状態では文字色が背景として塗られ、透過にならない。
+    -- 太字・イタリック・下線はテーマの指定をそのまま活かす
+    current.reverse = nil
+    -- nvim_get_hl は default = true を含めて返す。そのまま渡すと
+    -- 「既存定義があれば何もしない」書き込みになり、上書きできない
+    current.default = nil
+    vim.api.nvim_set_hl(0, group, current)
+  end
+  clear_sign_backgrounds()
+end
+
+--- 分割の境界線とポップアップのつまみを、コメントと同じ色にする。
+---
+--- どのテーマも境界線の色を「面を塗る前提」で決めており、面を透過させると
+--- 端末の背景に対してほとんど見えない。端末背景 #07080d に対するコントラストは
+--- iceberg 1.07、carbonfox 1.02、tokyonight 1.20 で、rose-pine の 3.88 だけが
+--- 例外だった（実測）。
+---
+--- Comment の fg を使う。どのテーマも灰色系で、同じ端末背景に対して 3.97 以上
+--- あるため、線だけを見せて色は足さずに済む。FloatBorder から引く手もあるが、
+--- catppuccin（#89b4fa）や tokyonight（#589ed7）では境界線が青くなる。
+---
+--- ポップアップのスクロールバーも同じ色にする。軌道（PmenuSbar）は透過のまま
+--- にして、つまみだけ残す
+function M.borders()
+  local comment = vim.api.nvim_get_hl(0, { name = 'Comment', link = false }).fg
+  if not comment then
+    return
+  end
+  vim.api.nvim_set_hl(0, 'WinSeparator', { fg = comment })
+  vim.api.nvim_set_hl(0, 'VertSplit', { fg = comment })
+  vim.api.nvim_set_hl(0, 'PmenuThumb', { bg = comment })
+end
+
+--- 診断の色を solarized-osaka のパレットに替える。
+---
+--- iceberg は DiagnosticInfo を String と、DiagnosticHint を Comment と
+--- 同じ色にしている。どちらも本文に埋もれて診断だと分からない。
+---
+--- 本文の色（String や Keyword）は別のグループなので変わらない。
+--- 連動するのは診断の表示そのものと、同じ意味づけで相乗りしている
+--- oil のファイル状態やスナックスのピッカー。
+---
+--- テーマを変えても同じ色にする。診断だという手掛かりを固定したい
+function M.diagnostics()
+  local ok, palette = pcall(require, 'solarized-osaka.colors')
+  if not ok then
+    return
+  end
+  local c = palette.setup()
+
+  -- iceberg は Sign / Underline / Floating を個別に定義していて Diagnostic*
+  -- を見ていない。1箇所で色が決まるよう、派生先もまとめて当てる
+  local SEVERITIES = {
+    { 'Error', c.red, c.red900, c.red300 },
+    { 'Warn', c.yellow, c.yellow900, c.yellow300 },
+    { 'Info', c.blue, c.blue900, c.blue300 },
+    { 'Hint', c.cyan, c.cyan900, c.cyan300 },
+  }
+
+  for _, s in ipairs(SEVERITIES) do
+    local name, base, dark, bright = s[1], s[2], s[3], s[4]
+    vim.api.nvim_set_hl(0, 'Diagnostic' .. name, { fg = base })
+    vim.api.nvim_set_hl(0, 'DiagnosticSign' .. name, { fg = base })
+    vim.api.nvim_set_hl(0, 'DiagnosticFloating' .. name, { fg = base })
+
+    -- 波線は sp だけ差し替える。undercurl などの指定は iceberg のものを残す
+    local underline = vim.api.nvim_get_hl(0, { name = 'DiagnosticUnderline' .. name, link = false })
+    underline.sp = base
+    vim.api.nvim_set_hl(0, 'DiagnosticUnderline' .. name, underline)
+
+    -- 行末に出す診断の文には地を敷く。本文の中に文が割り込む形なので、
+    -- 色だけだとどこからどこまでが診断なのか分かりにくい。
+    -- 組み合わせは solarized-osaka に倣う（groups/editor.lua）。
+    -- 文字は 500 ではなく 300 を使う。500 だと地とのコントラストが 3.02 で読みづらい
+    vim.api.nvim_set_hl(0, 'DiagnosticVirtualText' .. name, { bg = dark, fg = bright })
+  end
+end
+
+--- quickfix で選んでいる行から文字色を外す。
+---
+--- QuickFixLine は帯の色と一緒に文字色も持っている。そのため選択中の行だけ
+--- 本文の構文の色が上書きされ、一色に潰れる。帯だけ残せば色が透ける
+function M.quickfix_line()
+  local current = vim.api.nvim_get_hl(0, { name = 'QuickFixLine', link = false })
+  if current.bg then
+    vim.api.nvim_set_hl(0, 'QuickFixLine', { bg = current.bg })
+  end
+end
+
+--- 検索の件数（`[3/12]`）をマゼンタにする。
+---
+--- iceberg の既定色は String と同じ（#89b9c2）で、本文の文字列と見分けが付かない。
+--- 「検索の表示だ」と一目で分かることを優先し、本文に出ない色相を当てる。
+---
+--- 色は solarized-osaka から借りて、incline と出どころを揃える。
+--- テーマを変えても同じ色にする。検索の表示だという手掛かりを固定したい。
+---
+--- 出る場所は2つある。noice が一致行の末尾へ virtual text で出し、
+--- lualine の searchcount がステータスラインへ出す。
+--- 探している場所から目を離さずに済むのは前者だが、見失った時の保険に両方塗る
+function M.search_count()
+  local ok, palette = pcall(require, 'solarized-osaka.colors')
+  if not ok then
+    return
+  end
+  local magenta = palette.setup().magenta300
+  vim.api.nvim_set_hl(0, 'NoiceVirtualText', { fg = magenta })
+  vim.api.nvim_set_hl(0, 'LualineSearchCount', { fg = magenta })
+end
+
+--- キーワードをイタリックにする。
+---
+--- 制御構造（if / function / return など）を字形で分け、視覚的な層を作る。
+--- 型や関数名まで広げるとイタリックが多くなりすぎて逆に読みにくい。
+--- コメントは含めない。
+---
+--- 下位の種類（@keyword.export など）は列挙しない。Treesitter が @keyword から
+--- 継ぐため、親に付ければ一緒に斜体になる。
+---
+--- テーマ側にスタイルの設定項目があるものもあるが、どのテーマでも同じ見え方に
+--- したいのでここで揃える。表示には端末とフォントの両方の対応が要る
+--- （tmux は sitm / ritm を持つ tmux-256color が必要。screen-256color では
+--- 握り潰される）
+local ITALIC_GROUPS = {
+  'Keyword',
+  'Statement',
+  'Conditional',
+  'Repeat',
+  'Exception',
+  '@keyword',
+  '@keyword.function',
+  '@keyword.conditional',
+  '@keyword.repeat',
+  '@keyword.return',
+  '@keyword.operator',
+  '@keyword.import',
+}
+
+--- 上の指定から漏れる分を戻すグループ。記号は字形の差が読み取りづらく、
+--- 斜体にしても層が増えないため戻す。
+---
+--- JSX / HTML の山括弧（< > /）は、テーマによって Statement や Keyword へ
+--- リンクしており、キーワードと一緒に斜体になる。
+---
+--- 三項演算子は ? と : の両方が @keyword.conditional.ternary になる。
+--- 片方だけ立体にはできない
+local UPRIGHT_GROUPS = {
+  '@tag.delimiter',
+  '@keyword.conditional.ternary',
+}
+
+function M.italic()
+  local function style(group, italic)
+    local current = vim.api.nvim_get_hl(0, { name = group, link = false })
+    current.italic = italic
+    -- nvim_get_hl は default = true を含めて返す。そのまま渡すと
+    -- 「既存定義があれば何もしない」書き込みになり、上書きできない
+    current.default = nil
+    vim.api.nvim_set_hl(0, group, current)
+  end
+
+  for _, group in ipairs(ITALIC_GROUPS) do
+    style(group, true)
+  end
+  -- リンクを解決した後で戻す。順番を入れ替えると、リンク元が後から斜体にする
+  for _, group in ipairs(UPRIGHT_GROUPS) do
+    style(group, false)
+  end
+end
+
+--- lualine の配色を組み立てる。
+---
+--- 全区画の背景を本文（Normal）と同じ色に揃え、区画ごとに色が変わる既定の
+--- 見た目をやめる。本文と地続きの面にして、文字だけが乗って見えるようにする。
+---
+--- 本文の色はテーマによって違うので決め打ちにしない。iceberg では本文を
+--- 塗っていない（端末の色を透けさせている）ため、塗らない指定になる。
+---
+--- 元の配色（auto テーマ）はカラースキームから生成されるので、それを土台に
+--- 背景だけ差し替える。モード表示の区画は「濃い文字 + 明るい背景」の作りなので、
+--- 背景色を文字色へ移して見分けを保つ
+function M.lualine_theme()
+  -- auto テーマは読み込み時のカラースキームから生成され、その結果が
+  -- モジュールとしてキャッシュされる。テーマを切り替えても作り直されないので、
+  -- 明示的に捨ててから読み込む。これをしないとモード表示の色が
+  -- 最初のテーマのまま固定される
+  package.loaded['lualine.themes.auto'] = nil
+  local ok, auto = pcall(require, 'lualine.themes.auto')
+  if not ok then
+    return 'auto'
+  end
+  local normal = vim.api.nvim_get_hl(0, { name = 'Normal', link = false })
+  local bg = normal.bg and string.format('#%06x', normal.bg) or 'NONE'
+  local theme = vim.deepcopy(auto)
+  for _, mode in pairs(theme) do
+    for name, section in pairs(mode) do
+      if name == 'a' and section.bg then
+        section.fg = section.bg -- モードの色を文字側へ移す
+        section.gui = 'bold'
+      end
+      section.bg = bg
+    end
+  end
+  return theme
+end
+
+--- ステータスラインの背景を本文（Normal）に合わせる。
+---
+--- テーマごとに独自の色を持っているが、それだと帯だけ浮いて見える。
+--- 本文と同じ面にして、文字だけが乗っている状態にしたい。
+---
+--- iceberg では本文を塗っていない（端末の色を透けさせている）ため、
+--- 塗らない指定になる。どのテーマでも「本文と同じ」という結果は変わらない。
+---
+--- lualine は区画ごとに自前の背景を持つので、そちらのテーマも作り直す
+--- （lua/plugins/ui.lua の flat_theme が Normal を読む）
+function M.match_statusline()
+  local normal = vim.api.nvim_get_hl(0, { name = 'Normal', link = false })
+  for _, group in ipairs({ 'StatusLine', 'StatusLineNC' }) do
+    local current = vim.api.nvim_get_hl(0, { name = group, link = false })
+    vim.api.nvim_set_hl(0, group, { fg = current.fg, bg = normal.bg or 'NONE' })
+  end
+
+  -- タブ行の文字色。今いるタブは本文と同じ明るさに太字、他は一段落とす。
+  -- 色ではなく明度で示す方針に合わせる。
+  -- lualine の tabs はこのグループ名を参照する（lua/plugins/ui.lua）ため、
+  -- 下の setup より先に定義する
+  local comment = vim.api.nvim_get_hl(0, { name = 'Comment', link = false })
+  vim.api.nvim_set_hl(0, 'LualineTabActive', { fg = normal.fg, bold = true })
+  vim.api.nvim_set_hl(0, 'LualineTabInactive', { fg = comment.fg })
+
+  -- ステータスラインのパスのうち、ファイル名だけを太字にする。
+  -- 明るさは他の控えめな要素（WinBar の文字色）に合わせる
+  local win_bar = vim.api.nvim_get_hl(0, { name = 'WinBar', link = false })
+  vim.api.nvim_set_hl(0, 'LualinePathFile', { fg = win_bar.fg, bold = true })
+
+  -- 読み取り専用の鍵だけ色を付ける。「書けない」は警告に近い状態なので、
+  -- 診断の警告色を借りる。色は診断にだけ使う方針を崩さずに済む
+  vim.api.nvim_set_hl(0, 'LualinePathLock', { link = 'DiagnosticWarn' })
+
+  -- lualine は区画ごとに自前の背景を持つので、そちらも作り直す。
+  -- 現在の設定を取り出してテーマだけ差し替える（lazy.nvim の opts は
+  -- キャッシュされていて評価し直せない）
+  if package.loaded['lualine'] then
+    local lualine = require('lualine')
+    local config = lualine.get_config()
+    config.options = config.options or {}
+    config.options.theme = M.lualine_theme()
+    pcall(lualine.setup, config)
+  end
+end
+
+function M.setup()
+  local group = vim.api.nvim_create_augroup('user_highlights', { clear = true })
+
+  -- カラースキームを切り替えるたびに当て直す。7 だけが iceberg 限定で、残りは全テーマ
+  vim.api.nvim_create_autocmd('ColorScheme', {
+    group = group,
+    callback = function()
+      -- 1. どのテーマでも面を透過させる
+      M.transparent()
+      -- 2. カーソル行の帯を左端の列まで伸ばす
+      M.match_cursorline()
+      -- 3. どのテーマでも差分の配色を揃える
+      M.diff()
+      -- 4. 透過した面の上でも境界線が見えるようにする
+      M.borders()
+      -- 5. キーワードを斜体にする
+      M.italic()
+      -- 6. 選択中のタブから面を外す。barbar も ColorScheme で自前のハイライトを
+      --    作り直すため、後ろへ回す。先に当てると barbar に上書きし返される
+      vim.schedule(M.flat_tabline)
+      -- 7. iceberg だけ、その上に階層（左端の列・パンくず）を作り直す
+      vim.schedule(M.apply)
+      -- 8. ステータスラインと lualine を本文に合わせる
+      vim.schedule(M.match_statusline)
+      -- 9. 検索の件数を本文から浮かせる
+      M.search_count()
+      -- 10. 診断の色を本文から浮かせる
+      M.diagnostics()
+      -- 11. quickfix の選択行から文字色を外す
+      M.quickfix_line()
+    end,
+  })
+  -- プラグインが後から記号のハイライトを定義するため、読み込みのたびに当て直す
+  vim.api.nvim_create_autocmd('User', {
+    group = group,
+    pattern = { 'VeryLazy', 'LazyLoad' },
+    callback = function()
+      vim.schedule(M.flat_tabline)
+      vim.schedule(M.apply)
+    end,
+  })
+end
+
+return M

@@ -1,0 +1,76 @@
+-- メインは iceberg。他は :colorscheme <name> で即座に切り替えられるよう
+-- rtp には載せておく。lazy.nvim は既定で遅延しないので、読み込みの指定は要らない。
+-- config は書かない（配色を当てるのは iceberg だけ）
+--
+-- 「background に追従する」は 'background' の値で明暗が変わるもの。
+-- 暗い側に固定してあるので（lua/config/options.lua）、light は名前で指定する
+return {
+  -- dark: iceberg（= iceberg-dark）
+  -- light: iceberg-light。background に追従する
+  {
+    'oahlen/iceberg.nvim', -- Lua 移植版。Treesitter / LSP セマンティックトークン対応
+    lazy = false,
+    priority = 1000, -- 他プラグインより先に読み込む
+    config = function()
+      -- 配色の微調整は lua/config/highlights.lua に集約している
+      require('config.highlights').setup()
+      vim.cmd.colorscheme('iceberg')
+    end,
+  },
+
+  -- dark: tokyonight（= tokyonight-moon）、-night、-storm
+  -- light: tokyonight-day。background に追従する
+  { 'folke/tokyonight.nvim' },
+
+  -- dark: kanagawa（= kanagawa-wave）、-dragon
+  -- light: kanagawa-lotus。background に追従する
+  {
+    'rebelot/kanagawa.nvim',
+    opts = {
+      -- 非アクティブなウィンドウを沈ませる。NormalNC・WinSeparator・WinBarNC の
+      -- 背景が bg_dim になる。tmux のペインで同じことをしているのと揃う
+      dimInactive = true,
+
+      -- 既定は非アクティブ側を暗くするが、こちらは逆に明るくする。iceberg で
+      -- 同じことをしているのに揃え、tmux のペイン（アクティブが暗く、非アクティブが
+      -- 明るい）とも向きを合わせる。差は 1.09 倍前後。
+      --
+      -- 文字も 25% 沈める。既定の fg_dim（oldWhite #c8c093）は本文とほぼ同じ
+      -- 明るさで（dragon では 1.10 倍）、色味が変わるだけで沈まないため。
+      -- 背景の 1.09 倍だけでは見分けられない
+      colors = {
+        theme = {
+          wave = { ui = { bg_dim = '#262630', fg_dim = '#a5a18c' } },
+          dragon = { ui = { bg_dim = '#201e1e', fg_dim = '#939693' } },
+        },
+      },
+    },
+  },
+
+  -- dark: github_dark と _default / _dimmed / _colorblind / _high_contrast / _tritanopia
+  -- light: github_light と _default / _colorblind / _high_contrast / _tritanopia
+  -- background には追従しない。名前で選ぶ
+
+  -- 名前は1つだけ。background に追従して light / dark が変わる
+  { 'sainnhe/gruvbox-material' },
+  { 'ellisonleao/gruvbox.nvim' }, -- 素の gruvbox（Lua 移植版）
+
+  -- dark のみ。background には追従しない
+  { 'ricardoraposo/gruvbox-minor.nvim' },
+  { 'vague-theme/vague.nvim' },
+
+  -- dark: rose-pine（= rose-pine-main）、-moon
+  -- light: rose-pine-dawn。background に追従する
+  { 'rose-pine/neovim', name = 'rose-pine' },
+
+  -- dark: catppuccin-mocha、-macchiato、-frappe
+  -- light: catppuccin-latte。catppuccin は background に追従する
+  --
+  -- Neovim にも catppuccin が同梱されているが、そちらは Vim からの移植で
+  -- mocha などの系統を持たない。rtp はプラグインが先なので、こちらが勝つ
+  { 'catppuccin/nvim', name = 'catppuccin' },
+
+  -- dark: nightfox、duskfox、nordfox、terafox、carbonfox
+  -- light: dayfox、dawnfox。background には追従しない
+  { 'EdenEast/nightfox.nvim' },
+}
