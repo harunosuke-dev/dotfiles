@@ -32,7 +32,7 @@ fi
 # 2) 設定パッケージ → コマンドの対応
 #    packages/ にstow設定があるのに、コマンド本体が入っていないものを警告する
 log_step "TOOLS" "Checking package/command pairs..."
-pairs="alacritty:alacritty bat:bat fd:fd fzf:fzf gh:gh lazygit:lazygit mise:mise navi:navi ripgrep:rg skhd:skhd starship:starship tmux:tmux vim:vim yabai:yabai hammerspoon:hs"
+pairs="alacritty:alacritty bat:bat fd:fd fzf:fzf gh:gh lazygit:lazygit mise:mise ripgrep:rg skhd:skhd starship:starship tmux:tmux vim:vim yabai:yabai hammerspoon:hs"
 tool_issues=0
 for pair in $pairs; do
     pkg="${pair%%:*}"

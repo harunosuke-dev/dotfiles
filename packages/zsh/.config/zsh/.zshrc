@@ -36,7 +36,6 @@
 # - Ctrl+Z : fz() - zoxide の履歴から cd
 # - Ctrl+O : tmux sessionizer (= tmux prefix + C-o)
 # - Ctrl+S : tmux session switch (= tmux prefix + C-s)
-# - Alt+K  : navi のチートシート（04-plugins.zsh）
 # - cdg    : ghq repository -> cd（コマンド。インラインの fzf）
 #
 # tmux セッションの削除は tmux 側の prefix + C-x のみ。
