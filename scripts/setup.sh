@@ -81,7 +81,6 @@ run_full_setup() {
     run_step "Install mise tools" /bin/bash "$CUR_DIR/setup-mise.sh"
     run_step "Install zinit" /bin/bash "$CUR_DIR/setup-zinit.sh"
     run_step "Build bat theme cache" /bin/bash "$CUR_DIR/setup-bat.sh"
-    run_step "Configure Neovim" /bin/bash "$CUR_DIR/setup-nvim.sh"
     run_step "Configure logins" /bin/bash "$CUR_DIR/setup-login.sh"
 }
 

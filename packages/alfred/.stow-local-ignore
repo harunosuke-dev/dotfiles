@@ -1,2 +1,7 @@
+# この file があると stow の既定の無視の一覧は使われないので、既定の分もここに書く
+\.git
+\.gitignore
+\.DS_Store
+
 # workflow/ は Alfred へ取り込む元データで、ホームに配るものではない
 ^/workflow$
