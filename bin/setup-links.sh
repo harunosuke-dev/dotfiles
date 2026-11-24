@@ -145,10 +145,8 @@ make_dir=(
     "$XDG_CONFIG_HOME/zsh"
     "$XDG_CACHE_HOME/zsh"
     "$XDG_STATE_HOME/zsh" # HISTFILEの置き場。無いとzshが履歴を保存できない
-    # VSCode未起動のマシンでstowがCodeフォルダごとsymlink化（folding）し、
-    # キャッシュ類がリポジトリ内に書き込まれる事故を防ぐ
-    "$HOME/Library/Application Support/Code/User"
-    # 同上：Claude Code未起動のマシンで履歴・キャッシュがリポジトリに入るのを防ぐ
+    # Claude Code未起動のマシンで、stowが.claudeフォルダごとsymlink化（folding）し、
+    # 履歴・キャッシュがリポジトリに入るのを防ぐ
     "$HOME/.claude"
 )
 for dir in "${make_dir[@]}"; do

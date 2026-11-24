@@ -36,7 +36,7 @@ brew "jq"  # JSON processor and query tool
 brew "lazygit"  # Terminal UI for git commands
 brew "libssh2"  # C library implementing SSH2 protocol
 brew "mas"  # Mac App Store command line interface
-brew "macism"  # CLI for switching macOS input sources (used by VSCodeVim IME auto-switch)
+brew "macism"  # CLI for switching macOS input sources (used by Vim / Neovim / tmux IME auto-switch)
 brew "neovim"  # Vim-based text editor
 brew "openssl@3"  # Cryptography and SSL/TLS toolkit
 brew "starship"  # Cross-shell customizable prompt
@@ -78,7 +78,6 @@ cask "notion"  # All-in-one workspace for notes and collaboration
 cask "obsidian"  # Knowledge management and note-taking
 cask "raindropio"  # Bookmark manager and web clipper
 cask "raycast"  # Productivity launcher and tool
-cask "visual-studio-code"  # Code editor by Microsoft
 
 ### --- Apps from AppStore --- ###
 mas "Amphetamine", id: 937984704  # Keep Mac awake utility
@@ -88,21 +87,3 @@ mas "HazeOver", id: 430798174  # Distraction dimmer for focus
 mas "ReminderBridge", id: 6745492181  # Reminder synchronization tool
 mas "RunCat", id: 1429033973  # CPU usage monitor in menu bar
 # mas "Xcode", id: 497799835  # Apple's IDE for iOS/macOS development
-
-### --- VSCode Extensions --- ###
-vscode "clinyong.vscode-css-modules"  # CSS Modulesのクラス名補完・定義ジャンプ
-vscode "davidanson.vscode-markdownlint"  # Markdownのlint
-vscode "dbaeumer.vscode-eslint"  # JavaScript/TypeScriptのlint
-vscode "dsznajder.es7-react-js-snippets"  # Reactスニペット
-vscode "eamodio.gitlens"  # Git履歴・blame表示の強化
-vscode "editorconfig.editorconfig"  # EditorConfig対応
-vscode "eliostruyf.vscode-front-matter"  # 記事のfrontmatter管理
-vscode "esbenp.prettier-vscode"  # コード整形（JS/TS/CSS/JSONのみ有効。mdx/mdは対象外）
-vscode "extr0py.vscode-relative-line-numbers"  # 相対行番号
-vscode "formulahendry.auto-rename-tag"  # HTML/JSXタグの開閉自動リネーム
-vscode "naumovs.color-highlight"  # カラーコードの色プレビュー
-vscode "unifiedjs.vscode-mdx"  # MDX言語サポート
-vscode "usernamehw.errorlens"  # エラーを行内に表示
-vscode "vscodevim.vim"  # Vimキーバインド
-vscode "yoavbls.pretty-ts-errors"  # TypeScriptエラーを読みやすく整形
-

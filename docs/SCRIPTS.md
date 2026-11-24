@@ -643,7 +643,7 @@ brew "ripgrep"
 brew "bat"
 
 # Applications
-cask "visual-studio-code"
+cask "ghostty"
 cask "docker"
 
 # Fonts
@@ -679,7 +679,7 @@ cat ~/.config/homebrew/Brewfile
 brew bundle install
 
 # 特定のパッケージのみインストール
-brew bundle install --grep "vscode"
+brew bundle install --grep "ripgrep"
 
 # インストール状況の確認
 brew bundle check

@@ -40,7 +40,6 @@ check_xcode_tools
 ###########################################################
 # Default values
 install_cask=0
-install_vscode=0
 install_mas=0
 
 # Interactive prompts for optional components
@@ -57,14 +56,6 @@ elif [ -t 0 ]; then
     case "$response" in
         [yY][eE][sS]|[yY]) install_cask=1 ;;
         *) log_info "GUI applications will be skipped" ;;
-    esac
-
-    # Ask about VSCode extensions
-    echo -n "❓ Install VSCode extensions? [y/N]: "
-    read -r response || response=""
-    case "$response" in
-        [yY][eE][sS]|[yY]) install_vscode=1 ;;
-        *) log_info "VSCode extensions will be skipped" ;;
     esac
 
     # Ask about Mac App Store apps
@@ -118,12 +109,6 @@ create_filtered_brewfile() {
     if [ "$install_cask" = 1 ]; then
         log_info "Including GUI applications (cask)"
         grep -E '^cask ' "$source_file" >> "$target_file"
-    fi
-
-    # Add VSCode extensions if requested
-    if [ "$install_vscode" = 1 ]; then
-        log_info "Including VSCode extensions"
-        grep -E '^vscode ' "$source_file" >> "$target_file"
     fi
 
     # Add Mac App Store apps if requested
