@@ -21,7 +21,6 @@ brew "fzf"  # Fuzzy finder for command line
 brew "gh"  # GitHub command line tool
 brew "git"  # Distributed version control system
 brew "git-delta"  # Syntax-highlighting pager for git and diff output
-brew "navi"  # Interactive cheatsheet tool for command line
 brew "ripgrep"  # Fast text search tool (rg)
 
 # --------------------------------------------------

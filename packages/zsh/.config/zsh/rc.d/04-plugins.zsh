@@ -35,7 +35,7 @@ zinit light-mode for \
 # ==========================================
 #
 # Homebrew: System tools, heavy dependencies, frequent updates
-# - starship, ripgrep, gh, eza, bat, fd, delta, navi
+# - starship, ripgrep, gh, eza, bat, fd, delta
 # - Completions: /opt/homebrew/share/zsh/site-functions/
 #
 # zinit: Lightweight utilities, shell-specific plugins
@@ -54,36 +54,6 @@ zinit light-mode as'program' from'gh-r' for \
 # ==========================================
 #  Productivity & Navigation Tools
 # ==========================================
-
-# navi - Interactive cheat sheet for terminal commands (Ctrl+N to search)
-# navi installed via Homebrew, configuration and keybindings below
-__navi_search() {
-    local result
-    if [[ -n "$TMUX" ]]; then
-        local tmpfile
-        tmpfile="$(mktemp)"
-        # popupはPATHを引き継がないことがあるためnaviの絶対パスを渡す。
-        # 選んで消えるものなので中央に 90%（packages/tmux/bin/tmux-popup）
-        ~/.local/bin/tmux-popup center \
-            "${commands[navi]} --print --fzf-overrides '--with-nth 2,3,1' --query=${(qq)LBUFFER} > ${(qq)tmpfile}"
-        result="$(<"$tmpfile")"
-        command rm -f -- "$tmpfile"
-    else
-        result="$(navi --print --query="$LBUFFER")"
-    fi
-    [[ -n "$result" ]] && LBUFFER="$result"
-    zle reset-prompt
-}
-__setup_navi() {
-    if command -v navi >/dev/null; then
-        export NAVI_CONFIG="$XDG_CONFIG_HOME/navi/config.yaml"
-
-        zle -N __navi_search
-        # Alt+K。^N は emacs キーマップで履歴を1つ進めるキーなので譲る
-        bindkey '^[k' __navi_search
-    fi
-}
-__setup_navi
 
 # forgit - Interactive git interface with fzf
 __forgit_atload() {

@@ -12,7 +12,6 @@
 # - Ctrl+R : widget::history() - fzf の履歴検索
 # - Ctrl+Z : fz() - zoxide の履歴から cd（emacs キーマップで空き）
 # - Ctrl+O : tmux sessionizer（= tmux prefix + C-o, popup）
-# - Alt+K : __navi_search - navi のチートシート（04-plugins.zsh）
 #
 # emacs の編集キーは明け渡さない。Ctrl+A/B/E/F/N/P/Y/K/W/U と、
 # プレフィックスの Ctrl+X はそのまま残す。
@@ -279,20 +278,6 @@ e() {
         fi
     fi
 }
-
-
-#########################################################################
-# COMMAND NAVIGATION (navi)
-#########################################################################
-
-# navi: チートシートから選んでプロンプトに貼る
-if command -v navi >/dev/null; then
-    navi() {
-        local cmd
-        cmd="$(command navi --print "$@" </dev/tty)" || return
-        [[ -n "$cmd" ]] && print -z -- "$cmd"
-    }
-fi
 
 
 #########################################################################
