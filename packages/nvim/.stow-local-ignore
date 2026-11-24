@@ -1,0 +1,11 @@
+# Files that stow does not link into $HOME
+# この file があると stow の既定の無視の一覧は使われないので、既定の分もここに書く
+
+\.git
+\.gitignore
+\.DS_Store
+
+# パッケージの根の説明書きと docs は、ホームに配らない（Neovim の設定は .config/nvim の下だけ）
+^/README.*
+^/LICENSE.*
+^/docs$
