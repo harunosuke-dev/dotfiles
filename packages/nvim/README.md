@@ -106,13 +106,12 @@ camelCase の一部を直したくなった時は、`ctU`（`U` の手前まで�
 ### 新しい Mac で再現する
 
 ```bash
-git clone https://github.com/Harunosuke-web/dotfiles ~/.dotfiles
-ghq get Harunosuke-web/nvim          # ~/Repos/github.com/Harunosuke-web/nvim へ
-~/.dotfiles/scripts/setup.sh          # brew / stow / nvim のリンクまで一括
+git clone https://github.com/harunosuke-dev/dotfiles ~/.dotfiles
+~/.dotfiles/scripts/setup.sh          # brew / stow まで一括
 nvim                                  # プラグインと LSP が自動導入される
 ```
 
-`setup.sh` の中で `setup-nvim.sh` が `~/.config/nvim` へのシンボリックリンクを張る。
+この設定は dotfiles の `packages/nvim/.config/nvim` にある。`setup.sh` の中の `bin/setup-links.sh` が、stow で `~/.config/nvim` に配る。
 
 ### 前提となる外部コマンド
 
