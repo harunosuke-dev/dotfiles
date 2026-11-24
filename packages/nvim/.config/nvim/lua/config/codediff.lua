@@ -189,6 +189,50 @@ function M.setup()
       end)
     end,
   })
+
+  -- 画像の差分を、画像として描く。
+  --
+  -- codediff は過去の版の中身を行として読むので、画像はバイナリの字の並びになる
+  -- （一覧には bin とだけ出る）。その版の画像を一時ファイルに書き出し、snacks の image で
+  -- そのバッファに描く。作業ツリーの側は本物のファイルなので、開いた時に snacks が描く。
+  -- 版がその画像を持たない時（足した・消した）は、git show が失敗するので何もしない。
+  --
+  -- HACK: Snacks.image.buf.attach は資料に無い中の関数（snacks の lua/snacks/image/buf.lua）。
+  -- snacks を更新して壊れたら、ここを直す
+  vim.api.nvim_create_autocmd('User', {
+    pattern = 'CodeDiffVirtualFileLoaded',
+    group = group,
+    callback = function(args)
+      local buf = args.data and args.data.buf
+      if not buf or not vim.api.nvim_buf_is_valid(buf) then
+        return
+      end
+      local root, rev, path = require('codediff.core.virtual_file').parse_url(vim.api.nvim_buf_get_name(buf))
+      if not path or not Snacks.image.supports_file(path) then
+        return
+      end
+      -- 版の書き方は git show の形に直す。:0 は :0:<path>、:1: は :1:<path>、それ以外は <rev>:<path>
+      local spec = rev:sub(-1) == ':' and rev .. path or rev .. ':' .. path
+      vim.system({ 'git', '-C', root, 'show', spec }, { text = false }, function(result)
+        if result.code ~= 0 then
+          return
+        end
+        vim.schedule(function()
+          if not vim.api.nvim_buf_is_valid(buf) then
+            return
+          end
+          local out = vim.fn.tempname() .. '.' .. vim.fn.fnamemodify(path, ':e')
+          local file = io.open(out, 'wb')
+          if not file then
+            return
+          end
+          file:write(result.stdout)
+          file:close()
+          Snacks.image.buf.attach(buf, { src = out })
+        end)
+      end)
+    end,
+  })
 end
 
 return M
