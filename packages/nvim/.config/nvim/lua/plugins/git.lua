@@ -130,7 +130,10 @@ return {
         map('n', '<leader>hB', function()
           gs.blame()
         end, '[H]unk [B]lame : the whole buffer')
-        -- 1ファイルに絞った差分。gitsigns の diffthis ではなく codediff で開く。
+        -- 1ファイルを、直前のコミット（HEAD~）と比べる。直したばかりのコミットも含めて見るため。
+        -- 作業中の変更だけなら <leader>gc の一覧で足りる。
+        --
+        -- gitsigns の diffthis ではなく codediff で開く。
         --
         -- diffthis は縦分割でインデックス側のバッファを開くが、閉じる順番を誤ると
         -- 落ちる（差分モードのまま窓を解放すると、幅の再計算で DiffUpdated が飛び、
@@ -138,20 +141,15 @@ return {
         --
         -- codediff なら <Space>gc と同じ見た目で、タブごと閉じれば済む。
         -- % は codediff が展開しないので、パスは自分で渡す
-        local function file_diff(revision)
-          return function()
-            local file = vim.api.nvim_buf_get_name(0)
-            if file == '' then
-              vim.notify('名前の付いたファイルでのみ使える', vim.log.levels.WARN)
-              return
-            end
-            local cmd = 'CodeDiff ' .. (revision and revision .. ' ' or '') .. '-- ' .. vim.fn.fnameescape(file)
-            require('config.codediff').open('file-diff', cmd, (revision or '') .. file)
+        map('n', '<leader>hd', function()
+          local file = vim.api.nvim_buf_get_name(0)
+          if file == '' then
+            vim.notify('名前の付いたファイルでのみ使える', vim.log.levels.WARN)
+            return
           end
-        end
-
-        map('n', '<leader>hd', file_diff(), '[H]unk [D]iff of this file')
-        map('n', '<leader>hD', file_diff('HEAD~'), '[H]unk [D]iff of this file against HEAD~')
+          local cmd = 'CodeDiff HEAD~ -- ' .. vim.fn.fnameescape(file)
+          require('config.codediff').open('file-diff', cmd, file)
+        end, '[H]unk [D]iff of this file against HEAD~')
 
         -- 表示の切り替え
         map('n', '<leader>ub', gs.toggle_current_line_blame, '[U]I [B]lame : toggle inline')
@@ -163,7 +161,7 @@ return {
   },
 
   -- 変更のあったファイルを左のパネルに並べ、選ぶと横並びの差分を開く。
-  -- <leader>hd（gitsigns の diffthis）が1ファイルを見る道具なのに対し、
+  -- <leader>hd が1ファイルを見る道具なのに対し、
   -- こちらはブランチ単位で全部見て回る道具。
   --
   -- :CodeDiff main... がマージベースとの差分（PR と同じ範囲）を出す。
