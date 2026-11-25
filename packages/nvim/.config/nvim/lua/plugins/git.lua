@@ -1,3 +1,15 @@
+-- mini.diff の重ね表示を切り替える。<leader>gd と ;d から呼ぶ
+local function toggle_overlay()
+  local diff = require('mini.diff')
+  -- キーで遅延読み込みしているため、setup() が走る時点では
+  -- バッファが既に開かれており、有効化されていない。
+  -- 押した時にその場で有効にする（毎回 BufReadPre で読むより軽い）
+  if not diff.get_buf_data(0) then
+    diff.enable(0)
+  end
+  diff.toggle_overlay()
+end
+
 return {
   -- コミット・ステージング・履歴閲覧など、腰を据えた git 操作は lazygit に任せる
   {
@@ -33,20 +45,9 @@ return {
   {
     'nvim-mini/mini.diff',
     keys = {
-      {
-        '<leader>gd',
-        function()
-          local diff = require('mini.diff')
-          -- キーで遅延読み込みしているため、setup() が走る時点では
-          -- バッファが既に開かれており、有効化されていない。
-          -- 押した時にその場で有効にする（毎回 BufReadPre で読むより軽い）
-          if not diff.get_buf_data(0) then
-            diff.enable(0)
-          end
-          diff.toggle_overlay()
-        end,
-        desc = '[G]it [D]iff overlay in the buffer',
-      },
+      { '<leader>gd', toggle_overlay, desc = '[G]it [D]iff overlay in the buffer' },
+      -- よく押すので ; にも置く。検索の ;f / ;r と同じ段（lua/plugins/finder.lua）
+      { ';d', toggle_overlay, desc = 'Diff overlay in the buffer' },
     },
     opts = {
       view = {
@@ -151,8 +152,6 @@ return {
 
         map('n', '<leader>hd', file_diff(), '[H]unk [D]iff of this file')
         map('n', '<leader>hD', file_diff('HEAD~'), '[H]unk [D]iff of this file against HEAD~')
-        -- よく押すので ; にも置く。検索の ;f / ;r と同じ段（lua/plugins/finder.lua）
-        map('n', ';d', file_diff(), 'Diff of this file')
 
         -- 表示の切り替え
         map('n', '<leader>ub', gs.toggle_current_line_blame, '[U]I [B]lame : toggle inline')
